@@ -36,24 +36,6 @@ I'm a Computer Engineering graduate with hands-on experience in control-system s
 - **Bachelor's Degree in Computer Engineering (BEng)** - Toronto Metropolitan University (2019-2024)
 - **AP High School Honours Graduate** - Advanced Placement (2016-2019)
 
-## 🏆 Notable Achievements
-
-- **1st Place Winner** - Global AI Hackathon Toronto (2017) - Developed emotion-based game difficulty adjustment using OpenCV and ML
-- **1st Place Winner** - StartHacks I (2017) - Built Recipic mobile app for ingredient recognition and recipe suggestions
-- **1st Place Winner** - Open Source Circular Economy Days Hackathon (2017)
-- **Best Data Hack** - HackDavis (2018) - Carbon emission allowance mobile app
-- **Top 10 Finalist** - Make School's Student App Competition (2017)
-
-## 🌟 Key Projects
-
-### Chat Collect
-SaaS platform allowing users to collect email addresses from their GPT users, built with Next.js, TypeScript, PostgreSQL, Prisma, and Stripe.
-
-### Magic UI
-Designed, developed and sold animated UI components for developers using Next.js, TypeScript, and TailwindCSS.
-
-### llm.report
-Open-source logging and analytics platform for OpenAI API requests, featuring cost analysis and prompt improvement tools.
 
 ## 🚀 Getting Started
 
