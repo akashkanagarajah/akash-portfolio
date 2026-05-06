@@ -1,4 +1,3 @@
-import { HackathonCard } from "@/components/hackathon-card";
 import BlurFade from "@/components/magicui/blur-fade";
 import BlurFadeText from "@/components/magicui/blur-fade-text";
 import { ProjectCard } from "@/components/project-card";
@@ -136,9 +135,8 @@ export default function Page() {
                   Check out my latest work
                 </h2>
                 <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  I&apos;ve worked on a variety of projects, from simple
-                  websites to complex web applications. Here are a few of my
-                  favorites.
+                  From SCADA diagnostic tools in a nuclear plant to FPGA-based
+                  processors and games, here are some projects I&apos;ve built.
                 </p>
               </div>
             </div>
@@ -165,6 +163,7 @@ export default function Page() {
           </div>
         </div>
       </section>
+      {/* Hackathons section — no hackathon participation yet, left visually present but empty */}
       <section id="hackathons">
         <div className="space-y-12 w-full py-12">
           <BlurFade delay={BLUR_FADE_DELAY * 13}>
@@ -177,40 +176,66 @@ export default function Page() {
                   I like building things
                 </h2>
                 <p className="text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  During my time in university, I attended{" "}
-                  {DATA.hackathons.length}+ hackathons. People from around the
-                  country would come together and build incredible things in 2-3
-                  days. It was eye-opening to see the endless possibilities
-                  brought to life by a group of motivated and passionate
-                  individuals.
+                  No hackathon entries yet — check back soon!
                 </p>
               </div>
             </div>
           </BlurFade>
-          <BlurFade delay={BLUR_FADE_DELAY * 14}>
-            <ul className="mb-4 ml-4 divide-y divide-dashed border-l">
-              {DATA.hackathons.map((project, id) => (
-                <BlurFade
-                  key={project.title + project.dates}
-                  delay={BLUR_FADE_DELAY * 15 + id * 0.05}
-                >
-                  <HackathonCard
-                    title={project.title}
-                    description={project.description}
-                    location={project.location}
-                    dates={project.dates}
-                    image={project.image}
-                    links={project.links}
-                  />
-                </BlurFade>
-              ))}
-            </ul>
+          {/* Hackathon entries will render here once added to DATA.hackathons */}
+        </div>
+      </section>
+      <section id="interests">
+        <div className="space-y-12 w-full py-12">
+          <BlurFade delay={BLUR_FADE_DELAY * 15}>
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
+                  Beyond Engineering
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  Interests & Hobbies
+                </h2>
+              </div>
+            </div>
+          </BlurFade>
+          <BlurFade delay={BLUR_FADE_DELAY * 16}>
+            <div className="max-w-[800px] mx-auto grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Competitive Badminton</h3>
+                <p className="text-sm text-muted-foreground">
+                  TMU varsity team member, two-time ROPSA champion, and two OFSA
+                  appearances including a silver medal. Also coached youth and
+                  adult athletes with the City of Brampton.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Piano</h3>
+                <p className="text-sm text-muted-foreground">
+                  A longtime hobby that helps me unwind and stay creative outside
+                  of engineering.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Basketball</h3>
+                <p className="text-sm text-muted-foreground">
+                  Recreational basketball — a great way to stay active and
+                  competitive with friends.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Reading</h3>
+                <p className="text-sm text-muted-foreground">
+                  Non-fiction like Atomic Habits and The 5 AM Club, plus the
+                  occasional rom-com for a change of pace.
+                </p>
+              </div>
+            </div>
           </BlurFade>
         </div>
       </section>
       <section id="contact">
         <div className="grid items-center justify-center gap-4 px-4 text-center md:px-6 w-full py-12">
-          <BlurFade delay={BLUR_FADE_DELAY * 16}>
+          <BlurFade delay={BLUR_FADE_DELAY * 17}>
             <div className="space-y-3">
               <div className="inline-block rounded-lg bg-foreground text-background px-3 py-1 text-sm">
                 Contact
@@ -219,15 +244,14 @@ export default function Page() {
                 Get in Touch
               </h2>
               <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Want to chat? Just shoot me a dm{" "}
+                Want to chat? Feel free to{" "}
                 <Link
-                  href={DATA.contact.social.X.url}
+                  href="mailto:akashkanagarajah@gmail.com"
                   className="text-blue-500 hover:underline"
                 >
-                  with a direct question on twitter
+                  send me an email
                 </Link>{" "}
-                and I&apos;ll respond whenever I can. I will ignore all
-                soliciting.
+                and I&apos;ll get back to you as soon as I can.
               </p>
             </div>
           </BlurFade>
