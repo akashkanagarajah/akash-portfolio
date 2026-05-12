@@ -6,8 +6,6 @@ import {
   PixelTransition,
   BentoGrid,
   BentoCard,
-  ScrollStack,
-  ScrollStackItem,
 } from './animations'
 import DockComponent from './Dock'
 
@@ -167,6 +165,26 @@ function LiveTime() {
       .formatToParts(now)
       .find((p) => p.type === 'timeZoneName')?.value || visitorTz
 
+  // Calculate hour difference between Toronto and visitor
+  const getUtcOffset = (tz) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(now)
+    const offsetStr = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT'
+    const m = offsetStr.match(/GMT([+-]?\d+(?::\d+)?)/)
+    if (!m) return 0
+    const [h, min] = m[1].split(':').map(Number)
+    return h + (min || 0) / 60
+  }
+  const myOffset = getUtcOffset('America/Toronto')
+  const yourOffset = getUtcOffset(visitorTz)
+  const diffHours = Math.round(myOffset - yourOffset)
+  const diffLabel =
+    diffHours === 0
+      ? 'same time zone'
+      : `${Math.abs(diffHours)}h ${diffHours > 0 ? 'ahead of you' : 'behind you'}`
+
   return (
     <div className="time-widget">
       <div className="time-block">
@@ -177,7 +195,11 @@ function LiveTime() {
         <div className="time-value">{torontoTime}</div>
         <div className="time-tz">{torontoAbbr} · Toronto</div>
       </div>
-      <div className="time-divider" />
+      <div className="time-diff">
+        <span className="time-diff-line" />
+        <span className="time-diff-label">{diffLabel}</span>
+        <span className="time-diff-line" />
+      </div>
       <div className="time-block">
         <div className="time-label">YOUR TIME</div>
         <div className="time-value">{visitorTime}</div>
@@ -653,24 +675,19 @@ const PROJECTS = [
   },
 ]
 
-function ProjectStackCard({ p, i, total }) {
+function ProjectCard({ p }) {
   return (
     <BorderGlow
       glowColor="43 30 10"
       colors={['#C9A84C', '#e8c878', '#C9A84C']}
-      borderRadius={20}
-      glowRadius={45}
-      glowIntensity={0.9}
+      borderRadius={16}
+      glowRadius={35}
+      glowIntensity={0.8}
       animated={false}
       backgroundColor="var(--bg-card)"
-      className="project-stack-card"
+      className="project-card"
     >
-      <div className="psc-meta">
-        <span className="psc-num">
-          {String(i + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-        </span>
-        <span className="psc-date">{p.dates}</span>
-      </div>
+      <span className="psc-date">{p.dates}</span>
       <h3 className="psc-title">{p.title}</h3>
       <p className="psc-desc">{p.desc}</p>
       <div className="psc-tags">
@@ -695,25 +712,14 @@ export function ProjectsSection() {
           Projects
         </ScrollReveal>
         <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-          Scroll through — each card stacks on the next.
+          A few things I've built or contributed to.
         </ScrollReveal>
       </div>
-      <ScrollStack
-        className="projects-stack"
-        itemDistance={120}
-        itemScale={0.025}
-        itemStackDistance={28}
-        stackPosition="22%"
-        scaleEndPosition="12%"
-        baseScale={0.86}
-        blurAmount={0}
-      >
+      <div className="projects-grid">
         {PROJECTS.map((p, i) => (
-          <ScrollStackItem key={i}>
-            <ProjectStackCard p={p} i={i} total={PROJECTS.length} />
-          </ScrollStackItem>
+          <ProjectCard key={i} p={p} />
         ))}
-      </ScrollStack>
+      </div>
     </section>
   )
 }
