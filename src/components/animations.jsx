@@ -111,15 +111,17 @@ export function ScrollReveal({
       if (!el) return
       const r = el.getBoundingClientRect()
       const vh = window.innerHeight
-      const start = vh * 0.9
-      const end = vh * 0.25
+      const start = vh * 0.95
+      const end = vh * 0.3
       const p = 1 - Math.min(Math.max((r.top - end) / (start - end), 0), 1)
       setProgress(p)
     }
     update()
+    const timer = setTimeout(() => update(), 100)
     window.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
@@ -128,12 +130,15 @@ export function ScrollReveal({
   const text = typeof children === 'string' ? children : null
   if (text) {
     const words = text.split(/(\s+)/)
+    const wordCount = words.filter(w => !/^\s+$/.test(w)).length
+    let wordIdx = 0
     return (
       <Tag ref={containerRef} className={`scroll-reveal ${className}`}>
         {words.map((w, i) => {
           if (/^\s+$/.test(w)) return <React.Fragment key={i}>{w}</React.Fragment>
+          const wi = wordIdx++
           const local = Math.min(
-            Math.max((progress - i / (words.length * 1.3)) * 2, 0),
+            Math.max((progress - wi / (wordCount * 1.3)) * 3, 0),
             1
           )
           const op = baseOpacity + (1 - baseOpacity) * local
