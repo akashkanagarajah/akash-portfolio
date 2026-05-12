@@ -113,7 +113,7 @@ export function ScrollReveal({
       const r = el.getBoundingClientRect()
       const vh = window.innerHeight
       const start = vh * 0.95
-      const end = vh * 0.2
+      const end = vh * 0.3
       const p = 1 - Math.min(Math.max((r.top - end) / (start - end), 0), 1)
       setProgress(p)
     }

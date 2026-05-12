@@ -470,7 +470,7 @@ export function CareerSection() {
             Career
           </ScrollReveal>
           <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-            From nuclear control systems to assembly floors — the places that taught me to ship safe, working software.
+            From nuclear control rooms to assembly floors — where I learned to ship safe, working software.
           </ScrollReveal>
 
           <div className="resume-entries">
