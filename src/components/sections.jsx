@@ -705,7 +705,7 @@ export function ProjectsSection() {
         stackPosition="22%"
         scaleEndPosition="12%"
         baseScale={0.86}
-        blurAmount={1.5}
+        blurAmount={0}
       >
         {PROJECTS.map((p, i) => (
           <ScrollStackItem key={i}>
