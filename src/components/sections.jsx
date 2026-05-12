@@ -6,58 +6,67 @@ import {
   PixelTransition,
   BentoGrid,
   BentoCard,
-  ScrollStack,
-  ScrollStackItem,
 } from './animations'
+import DockComponent from './Dock'
 
-/* ---------- Floating Dock (preserved + theme toggle) ---------- */
+/* ---------- Floating Dock (React Bits magnification dock) ---------- */
 export function Dock({ theme, setTheme }) {
-  const Btn = ({ href, title, target, onClick, children }) => (
-    <a
-      className="dock-btn"
-      href={href}
-      title={title}
-      target={target}
-      rel={target ? 'noopener noreferrer' : undefined}
-      onClick={onClick}
-    >
-      {children}
-    </a>
-  )
+  const items = [
+    {
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>,
+      label: 'Home',
+      onClick: () => { window.location.hash = '#home' },
+    },
+    {
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>,
+      label: 'Resume',
+      onClick: () => { window.location.hash = '#resume' },
+    },
+    {
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.55 9.55 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>,
+      label: 'GitHub',
+      onClick: () => window.open('https://github.com/', '_blank'),
+    },
+    {
+      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 .02 5 2.5 2.5 0 0 1-.02-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.1c.5-.9 1.8-1.9 3.7-1.9 4 0 4.7 2.6 4.7 6V21h-4v-5.4c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21H10V9z"/></svg>,
+      label: 'LinkedIn',
+      onClick: () => window.open('https://linkedin.com/', '_blank'),
+    },
+    {
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21l-6.52 7.45L22 22h-6.84l-4.79-6.27L4.8 22H2l7-8L2 2h6.96l4.34 5.74L18.244 2zm-1.2 18h1.84L7.04 4H5.12l11.92 16z"/></svg>,
+      label: 'X / Twitter',
+      onClick: () => window.open('https://x.com/', '_blank'),
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5s-.2-1.6-.9-2.3c-.8-.9-1.7-.9-2.1-1C16.9 4 12 4 12 4s-4.9 0-8 .2c-.4 0-1.3 0-2.1 1C1.2 5.9 1 7.5 1 7.5S.8 9.4.8 11.3v1.4c0 1.9.2 3.8.2 3.8s.2 1.6.9 2.3c.8.9 1.9.8 2.4.9 1.7.2 7.7.2 7.7.2s4.9 0 8-.2c.4 0 1.3 0 2.1-1 .7-.7.9-2.3.9-2.3s.2-1.9.2-3.8v-1.4c0-1.9-.2-3.8-.2-3.8zM10 15V9l5.2 3-5.2 3z"/></svg>,
+      label: 'YouTube',
+      onClick: () => window.open('https://youtube.com/', '_blank'),
+    },
+    {
+      icon: <div style={{ width: 1, height: 22, background: 'var(--border-hover)', margin: '0 -0.15rem' }} />,
+      label: '',
+      className: 'dock-sep-item',
+      onClick: () => {},
+    },
+    {
+      icon: theme === 'dark' ? (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      ) : (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      ),
+      label: theme === 'dark' ? 'Dark mode' : 'Light mode',
+      onClick: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+    },
+  ]
+
   return (
-    <nav className="dock" aria-label="Floating dock">
-      <Btn href="#home" title="Home">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>
-      </Btn>
-      <Btn href="#resume" title="Resume / CV">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
-      </Btn>
-      <Btn href="https://github.com/" target="_blank" title="GitHub">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.55 9.55 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
-      </Btn>
-      <Btn href="https://linkedin.com/" target="_blank" title="LinkedIn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 .02 5 2.5 2.5 0 0 1-.02-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.1c.5-.9 1.8-1.9 3.7-1.9 4 0 4.7 2.6 4.7 6V21h-4v-5.4c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21H10V9z"/></svg>
-      </Btn>
-      <Btn href="https://x.com/" target="_blank" title="X / Twitter">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21l-6.52 7.45L22 22h-6.84l-4.79-6.27L4.8 22H2l7-8L2 2h6.96l4.34 5.74L18.244 2zm-1.2 18h1.84L7.04 4H5.12l11.92 16z"/></svg>
-      </Btn>
-      <Btn href="https://youtube.com/" target="_blank" title="YouTube">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5s-.2-1.6-.9-2.3c-.8-.9-1.7-.9-2.1-1C16.9 4 12 4 12 4s-4.9 0-8 .2c-.4 0-1.3 0-2.1 1C1.2 5.9 1 7.5 1 7.5S.8 9.4.8 11.3v1.4c0 1.9.2 3.8.2 3.8s.2 1.6.9 2.3c.8.9 1.9.8 2.4.9 1.7.2 7.7.2 7.7.2s4.9 0 8-.2c.4 0 1.3 0 2.1-1 .7-.7.9-2.3.9-2.3s.2-1.9.2-3.8v-1.4c0-1.9-.2-3.8-.2-3.8zM10 15V9l5.2 3-5.2 3z"/></svg>
-      </Btn>
-      <div className="dock-sep" />
-      <button
-        className="dock-btn dock-theme"
-        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-        title="Toggle theme"
-        aria-label="Toggle theme"
-      >
-        {theme === 'dark' ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-        ) : (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        )}
-      </button>
-    </nav>
+    <DockComponent
+      items={items}
+      panelHeight={60}
+      baseItemSize={44}
+      magnification={64}
+      distance={180}
+    />
   )
 }
 
@@ -156,6 +165,26 @@ function LiveTime() {
       .formatToParts(now)
       .find((p) => p.type === 'timeZoneName')?.value || visitorTz
 
+  // Calculate hour difference between Toronto and visitor
+  const getUtcOffset = (tz) => {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset',
+    }).formatToParts(now)
+    const offsetStr = parts.find((p) => p.type === 'timeZoneName')?.value || 'GMT'
+    const m = offsetStr.match(/GMT([+-]?\d+(?::\d+)?)/)
+    if (!m) return 0
+    const [h, min] = m[1].split(':').map(Number)
+    return h + (min || 0) / 60
+  }
+  const myOffset = getUtcOffset('America/Toronto')
+  const yourOffset = getUtcOffset(visitorTz)
+  const diffHours = Math.round(myOffset - yourOffset)
+  const diffLabel =
+    diffHours === 0
+      ? 'same time zone'
+      : `${Math.abs(diffHours)}h ${diffHours > 0 ? 'ahead of you' : 'behind you'}`
+
   return (
     <div className="time-widget">
       <div className="time-block">
@@ -166,7 +195,11 @@ function LiveTime() {
         <div className="time-value">{torontoTime}</div>
         <div className="time-tz">{torontoAbbr} · Toronto</div>
       </div>
-      <div className="time-divider" />
+      <div className="time-diff">
+        <span className="time-diff-line" />
+        <span className="time-diff-label">{diffLabel}</span>
+        <span className="time-diff-line" />
+      </div>
       <div className="time-block">
         <div className="time-label">YOUR TIME</div>
         <div className="time-value">{visitorTime}</div>
@@ -306,53 +339,43 @@ const ALL_SKILLS = [...SKILL_ROW_A, ...SKILL_ROW_B]
 function SkillsPanel() {
   const [revealed, setRevealed] = useState(false)
   return (
-    <div className={`skills-panel ${revealed ? 'is-revealed' : ''}`}>
+    <div
+      className={`skills-panel ${revealed ? 'is-revealed' : ''}`}
+      onClick={() => setRevealed((v) => !v)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') setRevealed((v) => !v)
+      }}
+      style={{ cursor: 'pointer' }}
+    >
       <div className="skills-head">
         <div className="bento-label">CURRENT STACK &amp; SKILLS</div>
-        <button
-          className="skills-toggle"
-          onClick={() => setRevealed((v) => !v)}
-          aria-pressed={revealed}
-        >
-          {revealed ? 'Show marquee' : 'Show all →'}
-        </button>
       </div>
-      {!revealed && (
-        <div
-          className="skills-marquee-css"
-          onClick={() => setRevealed(true)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') setRevealed(true)
-          }}
-        >
-          <div className="skills-track skills-track-a">
-            {[...SKILL_ROW_A, ...SKILL_ROW_A].map((s, i) => (
-              <span key={`a-${i}`} className="skill-chip">
-                {s}
-              </span>
-            ))}
-          </div>
-          <div className="skills-track skills-track-b">
-            {[...SKILL_ROW_B, ...SKILL_ROW_B].map((s, i) => (
-              <span key={`b-${i}`} className="skill-chip">
-                {s}
-              </span>
-            ))}
-          </div>
-          <div className="skills-tap-hint">TAP TO REVEAL</div>
-        </div>
-      )}
-      {revealed && (
-        <div className="skills-pills">
-          {ALL_SKILLS.map((s, i) => (
-            <span key={i} className="pill skill-pill" style={{ animationDelay: `${i * 30}ms` }}>
+      <div className={`skills-marquee-css ${revealed ? 'skills-hidden' : ''}`}>
+        <div className="skills-track skills-track-a">
+          {[...SKILL_ROW_A, ...SKILL_ROW_A].map((s, i) => (
+            <span key={`a-${i}`} className="skill-chip">
               {s}
             </span>
           ))}
         </div>
-      )}
+        <div className="skills-track skills-track-b">
+          {[...SKILL_ROW_B, ...SKILL_ROW_B].map((s, i) => (
+            <span key={`b-${i}`} className="skill-chip">
+              {s}
+            </span>
+          ))}
+        </div>
+        <div className="skills-tap-hint">TAP TO REVEAL</div>
+      </div>
+      <div className={`skills-pills ${revealed ? 'skills-visible' : ''}`}>
+        {ALL_SKILLS.map((s, i) => (
+          <span key={i} className="pill skill-pill" style={{ animationDelay: `${i * 30}ms` }}>
+            {s}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -468,7 +491,7 @@ export function CareerSection() {
             Career
           </ScrollReveal>
           <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-            From nuclear control systems to assembly floors — the places that taught me to ship safe, working software.
+            From nuclear control rooms to assembly floors — shipping safe, working software.
           </ScrollReveal>
 
           <div className="resume-entries">
@@ -621,16 +644,16 @@ export function EducationSection() {
 /* ---------- Section 5: Projects ---------- */
 const PROJECTS = [
   {
-    title: 'PartyNI — Event Vendor Marketplace',
-    dates: '2024 – Present · Co-Founder',
-    desc: 'Co-founding and actively developing PartyNI, a marketplace connecting customers with vendors for events. Active sprints: messaging, vendor onboarding, payment processing.',
-    tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
+    title: 'RISC CPU on FPGA',
+    dates: '2024',
+    desc: 'A custom RISC processor synthesized on FPGA — full instruction fetch, decode, execute and memory stages. Designed the ISA, datapath and control logic from the ground up.',
+    tags: ['VHDL', 'FPGA (Xilinx)', 'RISC Architecture', 'Computer Architecture'],
   },
   {
-    title: 'SCADA Data Integrity Diagnostic Tool',
-    dates: 'May 2022 – April 2023',
-    desc: 'Python diagnostic tool at OPG Pickering NGS to validate DES serial data packet integrity, parsing hexadecimal sequence numbers to detect corruption and transmission errors in SCADA data streams from operating reactor units.',
-    tags: ['Python', 'SCADA', 'Serial Comms', 'Data Validation'],
+    title: 'FPGA VGA Pong Game',
+    dates: '2024',
+    desc: 'Pong on an FPGA in VHDL, driving VGA output for real-time graphics rendering. Built end-to-end from clock dividers to sprite rasterization.',
+    tags: ['VHDL', 'FPGA (Xilinx)', 'VGA Display', 'Digital Logic'],
   },
   {
     title: 'Control Computer Validation Automation',
@@ -639,37 +662,32 @@ const PROJECTS = [
     tags: ['Python', 'Automation', 'DCC/PACE', 'CSA N290.14-15'],
   },
   {
-    title: 'FPGA VGA Pong Game',
-    dates: 'Coursework Project',
-    desc: 'Pong on an FPGA in VHDL, driving VGA output for real-time graphics rendering. Built end-to-end from clock dividers to sprite rasterization.',
-    tags: ['VHDL', 'FPGA (Xilinx)', 'VGA Display', 'Digital Logic'],
+    title: 'SCADA Data Integrity Diagnostic Tool',
+    dates: 'May 2022 – April 2023',
+    desc: 'Python diagnostic tool at OPG Pickering NGS to validate DES serial data packet integrity, parsing hexadecimal sequence numbers to detect corruption and transmission errors in SCADA data streams from operating reactor units.',
+    tags: ['Python', 'SCADA', 'Serial Comms', 'Data Validation'],
   },
   {
-    title: 'RISC CPU on FPGA',
-    dates: 'Coursework Project',
-    desc: 'A custom RISC processor synthesized on FPGA — full instruction fetch, decode, execute and memory stages. Designed the ISA, datapath and control logic from the ground up.',
-    tags: ['VHDL', 'FPGA (Xilinx)', 'RISC Architecture', 'Computer Architecture'],
+    title: 'PartyNI — Event Vendor Marketplace',
+    dates: '2024 – Present · Co-Founder',
+    desc: 'Co-founding and actively developing PartyNI, a marketplace connecting customers with vendors for events. Active sprints: messaging, vendor onboarding, payment processing.',
+    tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
   },
 ]
 
-function ProjectStackCard({ p, i, total }) {
+function ProjectCard({ p }) {
   return (
     <BorderGlow
       glowColor="43 30 10"
       colors={['#C9A84C', '#e8c878', '#C9A84C']}
-      borderRadius={20}
-      glowRadius={45}
-      glowIntensity={0.9}
+      borderRadius={16}
+      glowRadius={35}
+      glowIntensity={0.8}
       animated={false}
       backgroundColor="var(--bg-card)"
-      className="project-stack-card"
+      className="project-card"
     >
-      <div className="psc-meta">
-        <span className="psc-num">
-          {String(i + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-        </span>
-        <span className="psc-date">{p.dates}</span>
-      </div>
+      <span className="psc-date">{p.dates}</span>
       <h3 className="psc-title">{p.title}</h3>
       <p className="psc-desc">{p.desc}</p>
       <div className="psc-tags">
@@ -694,25 +712,14 @@ export function ProjectsSection() {
           Projects
         </ScrollReveal>
         <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-          Scroll through — each card stacks on the next.
+          A few things I've built or contributed to.
         </ScrollReveal>
       </div>
-      <ScrollStack
-        className="projects-stack"
-        itemDistance={120}
-        itemScale={0.025}
-        itemStackDistance={28}
-        stackPosition="22%"
-        scaleEndPosition="12%"
-        baseScale={0.86}
-        blurAmount={0}
-      >
+      <div className="projects-grid">
         {PROJECTS.map((p, i) => (
-          <ScrollStackItem key={i}>
-            <ProjectStackCard p={p} i={i} total={PROJECTS.length} />
-          </ScrollStackItem>
+          <ProjectCard key={i} p={p} />
         ))}
-      </ScrollStack>
+      </div>
     </section>
   )
 }

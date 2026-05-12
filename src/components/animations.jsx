@@ -117,7 +117,7 @@ export function ScrollReveal({
       setProgress(p)
     }
     update()
-    const timer = setTimeout(() => update(), 100)
+    const timer = setTimeout(() => update(), 200)
     window.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     return () => {
