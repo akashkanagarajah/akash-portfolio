@@ -9,7 +9,6 @@ import {
   ScrollStack,
   ScrollStackItem,
 } from './animations'
-import PixelCard from './PixelCard'
 import DockComponent from './Dock'
 
 /* ---------- Floating Dock (React Bits magnification dock) ---------- */
@@ -470,7 +469,7 @@ export function CareerSection() {
             Career
           </ScrollReveal>
           <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-            From nuclear control rooms to assembly floors — where I learned to ship safe, working software.
+            From nuclear control rooms to assembly floors — shipping safe, working software.
           </ScrollReveal>
 
           <div className="resume-entries">
@@ -651,7 +650,6 @@ const PROJECTS = [
     dates: '2024 – Present · Co-Founder',
     desc: 'Co-founding and actively developing PartyNI, a marketplace connecting customers with vendors for events. Active sprints: messaging, vendor onboarding, payment processing.',
     tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
-    isPixelCard: true,
   },
 ]
 
@@ -709,24 +707,10 @@ export function ProjectsSection() {
         scaleEndPosition="12%"
         baseScale={0.86}
         blurAmount={0}
-        useWindowScroll={true}
       >
         {PROJECTS.map((p, i) => (
           <ScrollStackItem key={i}>
-            {p.isPixelCard ? (
-              <PixelCard
-                colors="#C9A84C,#e8c878,#a88244"
-                gap={6}
-                speed={40}
-                className="project-pixel-card"
-              >
-                <div style={{ position: 'absolute', inset: 0 }}>
-                  <ProjectStackCard p={p} i={i} total={PROJECTS.length} />
-                </div>
-              </PixelCard>
-            ) : (
-              <ProjectStackCard p={p} i={i} total={PROJECTS.length} />
-            )}
+            <ProjectStackCard p={p} i={i} total={PROJECTS.length} />
           </ScrollStackItem>
         ))}
       </ScrollStack>
