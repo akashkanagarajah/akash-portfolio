@@ -86,3 +86,18 @@
   background: transparent;
   border: none;
 }
+
+@media (max-width: 768px) {
+  .dock-outer {
+    margin: 0;
+  }
+  .dock-panel {
+    gap: 0.15rem;
+    padding: 0 0.3rem 0.3rem;
+    border-radius: 0.85rem;
+    bottom: 0.4rem;
+    transform: translateX(-50%) scale(0.82);
+    transform-origin: bottom center;
+  }
+  .dock-label { font-size: 0.6rem; }
+}
