@@ -133,19 +133,21 @@ section { padding: 7rem 8% 5rem; position: relative; }
 }
 .hero-greet {
   display: block;
+  font-family: 'DM Sans', sans-serif;
   font-size: clamp(2.6rem, 5.4vw, 4.8rem);
   color: var(--text);
   font-style: italic;
-  font-weight: 400;
+  font-weight: 300;
   line-height: 1.15;
   overflow: visible;
 }
 .hero-name {
   display: block;
+  font-family: 'Bodoni Moda', serif;
   font-size: clamp(3.4rem, 7.2vw, 6.4rem);
   margin-top: 0.2rem;
   margin-bottom: 0;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.18;
   overflow: visible;
   white-space: nowrap;
