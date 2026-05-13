@@ -1220,9 +1220,11 @@ footer {
 /* ───────── RESPONSIVE ───────── */
 @media (max-width: 900px) {
   section { padding: 5rem 6% 3.5rem; }
+
+  /* Hero */
   .hero {
     grid-template-columns: 1fr;
-    gap: 3rem;
+    gap: 2.5rem;
     padding-top: 6rem;
   }
   .hero-name {
@@ -1231,16 +1233,15 @@ footer {
   .hero-right { order: -1; align-items: flex-start; }
   .hero-photo-frame { width: min(280px, 80%); }
   .bento-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
+    grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "about"
-      "time"
-      "skills"
-      "now"
-      "bad";
+      "about  about"
+      "time   skills"
+      "now    bad";
   }
   .bento-about { min-height: auto; }
+
+  /* Resume */
   .resume-grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -1248,7 +1249,75 @@ footer {
   .resume-side { position: static; }
   .resume-row { flex-direction: column; }
   .resume-date { margin-top: 0.5rem; }
+
+  /* Projects */
   .projects-grid { grid-template-columns: 1fr; }
   .project-card:last-child:nth-child(odd) { max-width: 100%; }
+
+  /* Courses */
   .course-grid { grid-template-columns: 1fr; }
+}
+
+/* ───────── RESPONSIVE — mobile ───────── */
+@media (max-width: 768px) {
+  section { padding: 4rem 5% 3rem; }
+
+  /* Typography scale-down */
+  .section-title { font-size: clamp(1.6rem, 5vw, 2.4rem); }
+  .section-sub { font-size: 0.9rem; }
+  .section-label { font-size: 0.62rem; padding: 0.25rem 0.7rem; }
+
+  /* Hero */
+  .hero {
+    min-height: auto;
+    gap: 2rem;
+    padding-top: 5rem;
+    padding-bottom: 2rem;
+  }
+  .hero-photo-frame { width: min(220px, 65%); }
+  .hero-heading { line-height: 1.08; margin-bottom: 1.6rem; }
+  .hero-greet { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+  .hero-name { font-size: clamp(2.2rem, 8vw, 3.4rem); }
+  .hero-label { font-size: 0.65rem; margin-bottom: 1.4rem; }
+  .hero-interests li { font-size: 0.92rem; }
+
+  /* Bento — single column */
+  .bento-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "about"
+      "time"
+      "skills"
+      "now"
+      "bad";
+  }
+  .bento-section { padding-bottom: 4rem; }
+  .bento-dog { width: 120px; height: 120px; right: -16px; bottom: -16px; }
+  .about-pager-slide .bento-bio p { font-size: 0.88rem; }
+  .time-value { font-size: clamp(1.8rem, 6vw, 2.4rem); }
+
+  /* Resume */
+  .resume-grid { gap: 1rem; }
+  .resume-side-label { font-size: 1.3rem; }
+  .resume-title { font-size: 0.95rem; }
+  .resume-company { font-size: 0.84rem; }
+  .resume-bullets li { font-size: 0.84rem; }
+  .resume-entries { gap: 1rem; margin-top: 1.2rem; }
+  .border-glow-inner { padding: 1.2rem 1.3rem; }
+
+  /* Projects */
+  .projects-section { padding-bottom: 5rem; }
+  .psc-title { font-size: 1.15rem; }
+  .psc-desc { font-size: 0.82rem; }
+
+  /* Connect */
+  .connect-cards { flex-direction: column; align-items: center; }
+  .connect-card { min-width: 0; width: 100%; max-width: 320px; }
+
+  /* Footer */
+  footer { padding-bottom: 5.5rem; font-size: 0.75rem; }
+
+  /* Skills */
+  .skills-pills { padding: 0.5rem 1rem 0.5rem; }
+  .skill-chip { font-size: 0.75rem; padding: 0.3rem 0.7rem; }
 }
