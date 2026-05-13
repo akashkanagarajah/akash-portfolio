@@ -25,7 +25,7 @@ export function Dock({ theme, setTheme }) {
     {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11.5L12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg>,
       label: 'Home',
-      onClick: () => { window.location.hash = '#home' },
+      onClick: () => { document.getElementById('home')?.scrollIntoView({ behavior: 'smooth' }) },
     },
     {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>,
@@ -551,7 +551,7 @@ export function BentoSection() {
         <BentoCard className="bento-bad" span="bad">
           <div className="bento-label">I ♥ BADMINTON</div>
           <p className="bad-desc">
-            To decompress, I turn to sports. Badminton is my go-to: TMU varsity team, two-time ROPSA champion, OFSA finalist (runner-up). I currently coach youth and adult athletes with the City of Brampton.
+            To decompress, I turn to sports. Badminton is my go-to: TMU varsity team, two-time ROPSSAA champion, OFSAA finalist (runner-up). I currently coach youth and adult athletes with the City of Brampton.
           </p>
           <div className="bad-thumb bad-thumb--ratio">
             {/* Badminton image path: `BENTO_BADMINTON_IMAGE_PATH` in `src/constants/imageAssets.js`. */}
