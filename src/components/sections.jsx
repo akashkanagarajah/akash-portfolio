@@ -260,7 +260,7 @@ const ABOUT_PAGES = [
           <strong> Stellantis</strong> and <strong>Honda</strong> — the floor teaches you respect for tolerance and takt.
         </p>
         <p>
-          On the side, I co-founded <a className="bio-link" href="#" target="_blank" rel="noreferrer">★ PartyNI</a> — an event vendor
+          On the side, I co-founded ★ PartyNI — an event vendor
           booking marketplace, in active development.
         </p>
       </>
@@ -804,7 +804,7 @@ const PROJECTS = [
   {
     title: 'PartyNI — Event Vendor Marketplace',
     dates: '2024 – Present · Co-Founder',
-    desc: 'Co-founding and actively developing PartyNI, a marketplace connecting customers with vendors for events. Active sprints: messaging, vendor onboarding, payment processing.',
+    desc: 'Co-founding PartyNI — a marketplace that connects customers with event vendors, handling everything from discovery and booking to secure payments and communication in one place.',
     tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
   },
 ]
