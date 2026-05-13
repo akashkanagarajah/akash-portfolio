@@ -146,13 +146,13 @@ section { padding: 7rem 8% 5rem; position: relative; }
   margin-top: 0.2rem;
   margin-bottom: 0;
   font-weight: 600;
-  line-height: 0.95;
+  line-height: 1.18;
   overflow: visible;
   white-space: nowrap;
 }
 .hero-name .animated-gradient-text {
   display: inline-block;
-  line-height: 0.95;
+  line-height: inherit;
   margin: 0;
   padding: 0;
   overflow: visible;
@@ -1317,7 +1317,10 @@ footer {
   /* Footer */
   footer { padding-bottom: 5.5rem; font-size: 0.75rem; }
 
-  /* Skills */
+  /* Skills — limit marquee to 3 rows on mobile */
+  .skills-marquee-row:nth-child(n+4) { display: none; }
+  .skills-marquee-rows { gap: 0.4rem; }
+  .skills-marquee-row .skill-chip { font-size: 0.68rem; padding: 0.25rem 0.6rem; }
   .skills-pills { padding: 0.5rem 1rem 0.5rem; }
   .skill-chip { font-size: 0.75rem; padding: 0.3rem 0.7rem; }
 }
