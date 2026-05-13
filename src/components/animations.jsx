@@ -261,6 +261,8 @@ export function PixelTransition({
   const orderRef = useRef(null)
   const rafRef = useRef(null)
   const startRef = useRef(null)
+  const cardRef = useRef(null)
+  const activeRef = useRef(false)
 
   if (orderRef.current === null) {
     const arr = Array.from({ length: totalPixels }, (_, i) => i)
@@ -275,6 +277,7 @@ export function PixelTransition({
     (toActive) => {
       cancelAnimationFrame(rafRef.current)
       startRef.current = null
+      activeRef.current = toActive
       const dur = animationStepDuration * 1000
       const tick = (t) => {
         if (startRef.current === null) startRef.current = t
@@ -296,6 +299,21 @@ export function PixelTransition({
     [animationStepDuration, totalPixels]
   )
 
+  useEffect(() => {
+    const reset = () => {
+      if (activeRef.current) animate(false)
+    }
+    const onTouch = (e) => {
+      if (cardRef.current && !cardRef.current.contains(e.target)) reset()
+    }
+    window.addEventListener('scroll', reset, { passive: true })
+    document.addEventListener('touchstart', onTouch, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', reset)
+      document.removeEventListener('touchstart', onTouch)
+    }
+  }, [animate])
+
   const handleEnter = () => {
     if (!active) animate(true)
   }
@@ -305,6 +323,7 @@ export function PixelTransition({
 
   return (
     <div
+      ref={cardRef}
       className={`pixelated-image-card ${className}`}
       style={{ position: 'relative', overflow: 'hidden', ...style }}
       onMouseEnter={handleEnter}

@@ -86,22 +86,45 @@ export default function Dock({
   dockHeight = 256,
   baseItemSize = 50
 }) {
+  const isTouch = useMemo(() => typeof window !== 'undefined' && 'ontouchstart' in window, []);
+  const effectiveMagnification = isTouch ? baseItemSize : magnification;
+
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
 
+  useEffect(() => {
+    if (!isTouch) return;
+    const reset = () => {
+      isHovered.set(0);
+      mouseX.set(Infinity);
+    };
+    window.addEventListener('scroll', reset, { passive: true });
+    return () => window.removeEventListener('scroll', reset);
+  }, [isTouch, isHovered, mouseX]);
+
   const maxHeight = useMemo(
-    () => Math.max(dockHeight, magnification + magnification / 2 + 4),
-    [magnification, dockHeight]
+    () => Math.max(dockHeight, effectiveMagnification + effectiveMagnification / 2 + 4),
+    [effectiveMagnification, dockHeight]
   );
   const heightRow = useTransform(isHovered, [0, 1], [panelHeight, maxHeight]);
   const height = useSpring(heightRow, spring);
+
+  const handleItemClick = (itemOnClick) => {
+    if (isTouch) {
+      isHovered.set(0);
+      mouseX.set(Infinity);
+    }
+    itemOnClick();
+  };
 
   return (
     <motion.div style={{ height, scrollbarWidth: 'none' }} className="dock-outer">
       <motion.div
         onMouseMove={({ pageX }) => {
-          isHovered.set(1);
-          mouseX.set(pageX);
+          if (!isTouch) {
+            isHovered.set(1);
+            mouseX.set(pageX);
+          }
         }}
         onMouseLeave={() => {
           isHovered.set(0);
@@ -115,12 +138,12 @@ export default function Dock({
         {items.map((item, index) => (
           <DockItem
             key={index}
-            onClick={item.onClick}
+            onClick={() => handleItemClick(item.onClick)}
             className={item.className}
             mouseX={mouseX}
             spring={spring}
             distance={distance}
-            magnification={magnification}
+            magnification={effectiveMagnification}
             baseItemSize={baseItemSize}
           >
             <DockIcon>{item.icon}</DockIcon>
