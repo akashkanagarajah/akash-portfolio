@@ -8,6 +8,16 @@ import {
   BentoCard,
 } from './animations'
 import DockComponent from './Dock'
+import {
+  HERO_PROFILE_PRIMARY_PATH,
+  HERO_PROFILE_HOVER_PATH,
+  BENTO_BADMINTON_IMAGE_PATH,
+} from '../constants/imageAssets'
+import { CONTACT_EMAIL, copyContactEmailToClipboard } from '../lib/copyEmailConfetti'
+
+const SOCIAL_LINKEDIN = 'https://www.linkedin.com/in/akash-k-617498178/'
+const SOCIAL_X = 'https://x.com/akash_21_'
+const SOCIAL_GITHUB = 'https://github.com/akashkanagarajah'
 
 /* ---------- Floating Dock (React Bits magnification dock) ---------- */
 export function Dock({ theme, setTheme }) {
@@ -25,22 +35,17 @@ export function Dock({ theme, setTheme }) {
     {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.55 9.55 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>,
       label: 'GitHub',
-      onClick: () => window.open('https://github.com/', '_blank'),
+      onClick: () => window.open(SOCIAL_GITHUB, '_blank'),
     },
     {
       icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 .02 5 2.5 2.5 0 0 1-.02-5zM3 9h4v12H3V9zm7 0h3.8v1.7h.1c.5-.9 1.8-1.9 3.7-1.9 4 0 4.7 2.6 4.7 6V21h-4v-5.4c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21H10V9z"/></svg>,
       label: 'LinkedIn',
-      onClick: () => window.open('https://linkedin.com/', '_blank'),
+      onClick: () => window.open(SOCIAL_LINKEDIN, '_blank'),
     },
     {
       icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2H21l-6.52 7.45L22 22h-6.84l-4.79-6.27L4.8 22H2l7-8L2 2h6.96l4.34 5.74L18.244 2zm-1.2 18h1.84L7.04 4H5.12l11.92 16z"/></svg>,
       label: 'X / Twitter',
-      onClick: () => window.open('https://x.com/', '_blank'),
-    },
-    {
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5s-.2-1.6-.9-2.3c-.8-.9-1.7-.9-2.1-1C16.9 4 12 4 12 4s-4.9 0-8 .2c-.4 0-1.3 0-2.1 1C1.2 5.9 1 7.5 1 7.5S.8 9.4.8 11.3v1.4c0 1.9.2 3.8.2 3.8s.2 1.6.9 2.3c.8.9 1.9.8 2.4.9 1.7.2 7.7.2 7.7.2s4.9 0 8-.2c.4 0 1.3 0 2.1-1 .7-.7.9-2.3.9-2.3s.2-1.9.2-3.8v-1.4c0-1.9-.2-3.8-.2-3.8zM10 15V9l5.2 3-5.2 3z"/></svg>,
-      label: 'YouTube',
-      onClick: () => window.open('https://youtube.com/', '_blank'),
+      onClick: () => window.open(SOCIAL_X, '_blank'),
     },
     {
       icon: <div style={{ width: 1, height: 22, background: 'var(--border-hover)', margin: '0 -0.15rem' }} />,
@@ -70,16 +75,6 @@ export function Dock({ theme, setTheme }) {
   )
 }
 
-/* ---------- Placeholder photo (stripey monospace) ---------- */
-function ImgPlaceholder({ label, ratio = '100%', className = '', style = {} }) {
-  return (
-    <div className={`img-placeholder ${className}`} style={{ paddingTop: ratio, ...style }}>
-      <div className="img-placeholder__stripes" />
-      <div className="img-placeholder__label">{label}</div>
-    </div>
-  )
-}
-
 /* ---------- Section 1: Hero ---------- */
 export function Hero() {
   return (
@@ -87,7 +82,7 @@ export function Hero() {
       <div className="hero-left">
         <p className="hero-label">Computer Engineer · Toronto, ON</p>
         <h1 className="hero-heading">
-          <span className="hero-greet">Hi, meet —</span>
+          <span className="hero-greet">Hi, meet</span>
           <span className="hero-name">
             <GradientText
               colors={['#C9A84C', '#f0c060', '#C9A84C', '#e8a820', '#C9A84C']}
@@ -107,14 +102,28 @@ export function Hero() {
 
       <div className="hero-right">
         <div className="hero-photo-frame">
+          {/* Profile images: paths in `src/constants/imageAssets.js`; PixelTransition keeps pixel hover reveal. */}
           <PixelTransition
             firstContent={
-              <ImgPlaceholder label="akash-main.jpg" ratio="133%" className="hero-photo-img" />
+              <img
+                src={HERO_PROFILE_PRIMARY_PATH}
+                alt="Akash Kanagarajah"
+                className="hero-photo-fill"
+                width={680}
+                height={906}
+                decoding="async"
+                fetchPriority="high"
+              />
             }
             secondContent={
-              <div style={{ position: 'absolute', inset: 0 }}>
-                <ImgPlaceholder label="akash-alt.jpg" ratio="133%" className="hero-photo-img alt" />
-              </div>
+              <img
+                src={HERO_PROFILE_HOVER_PATH}
+                alt=""
+                className="hero-photo-fill hero-photo-fill--alt"
+                width={680}
+                height={906}
+                decoding="async"
+              />
             }
             gridSize={10}
             pixelColor="#C9A84C"
@@ -328,13 +337,109 @@ function AboutPager() {
 }
 
 /* ---------- Skills Panel: CSS marquee → click to reveal pills ---------- */
-const SKILL_ROW_A = [
-  'Python', 'VHDL', 'C / C++', 'Shell / Bash', 'SCADA', 'FPGA (Xilinx)', 'SQL', 'Git',
+const SKILL_CATEGORIES = [
+  {
+    name: 'Languages',
+    items: [
+      'Python',
+      'C',
+      'C++',
+      'VHDL',
+      'Java',
+      'Assembly (HCS12)',
+      'MATLAB',
+      'JavaScript / TypeScript',
+      'SQL',
+      'Shell / Bash',
+    ],
+  },
+  {
+    name: 'Hardware & Embedded',
+    items: [
+      'FPGA Design (Xilinx)',
+      'ALU Design',
+      'FSM Design',
+      'RISC CPU Architecture',
+      'Cache Controller Design',
+      'VGA Controller',
+      'Microcontroller Programming (HCS12)',
+      'Interrupt Handling',
+      'ChipScope',
+      'Oscilloscope / Logic Analyzer',
+      'Breadboard Prototyping',
+      'Power Distribution / Switchgear',
+    ],
+  },
+  {
+    name: 'Software & CS',
+    items: [
+      'OOP / Design Patterns',
+      'Data Structures',
+      'Socket Programming (TCP/UDP)',
+      'Multithreading / POSIX pthreads',
+      'Process Management',
+      'OS Internals',
+      'Database Design',
+      'ER Modeling',
+      'Oracle SQL',
+      'UML',
+      'Requirements Engineering / SRS',
+      'Software Architecture',
+      'Middleware',
+    ],
+  },
+  {
+    name: 'Testing & QA',
+    items: ['JUnit', 'TestNG', 'Selenium', 'Playwright', 'Code Coverage Analysis', 'Test Planning', 'Web Application Testing'],
+  },
+  {
+    name: 'Security & Networking',
+    items: [
+      'Network Security',
+      'Cryptography',
+      'Authentication Protocols',
+      'Firewalls / IDS / VPNs',
+      'Endpoint Hardening',
+      'Application Whitelisting',
+      'IT/OT Security',
+      'Log Analysis',
+      'Vulnerability Triage',
+      'SCADA',
+    ],
+  },
+  {
+    name: 'Industrial & Engineering',
+    items: [
+      'DCC / PACE Control Computers',
+      'CSA N290.14-15',
+      'Nuclear Safety Protocols',
+      'OPG Engineering Change Control (ECC)',
+      'Serial Communication',
+      'Hexadecimal Parsing',
+      'AutoCAD',
+      'Linux',
+    ],
+  },
+  {
+    name: 'Web & Product (PartyNI)',
+    items: ['React / Next.js', 'Node.js', 'Stripe / Payments Integration', 'Git'],
+  },
+  {
+    name: 'Other',
+    items: [
+      'Machine Learning / Neural Networks',
+      'Computer Vision',
+      'Distributed Systems',
+      'Cloud Computing',
+      'Kubernetes / KubeMQ',
+      'JIRA',
+      'Microsoft Office Suite',
+    ],
+  },
 ]
-const SKILL_ROW_B = [
-  'Linux', 'AutoCAD', 'DCC / PACE', 'Serial Comms', 'CSA N290', 'Nuclear Safety', 'Embedded', 'Digital Logic',
-]
-const ALL_SKILLS = [...SKILL_ROW_A, ...SKILL_ROW_B]
+
+/** First five categories drive the multi-row marquee (L/R alternating). */
+const MARQUEE_CATEGORIES = SKILL_CATEGORIES.slice(0, 5)
 
 function SkillsPanel() {
   const [revealed, setRevealed] = useState(false)
@@ -351,30 +456,53 @@ function SkillsPanel() {
     >
       <div className="skills-head">
         <div className="bento-label">CURRENT STACK &amp; SKILLS</div>
+        {revealed && (
+          <div className="skills-scroll-hint">↓ scroll to see all skills</div>
+        )}
       </div>
-      <div className={`skills-marquee-css ${revealed ? 'skills-hidden' : ''}`}>
-        <div className="skills-track skills-track-a">
-          {[...SKILL_ROW_A, ...SKILL_ROW_A].map((s, i) => (
-            <span key={`a-${i}`} className="skill-chip">
-              {s}
-            </span>
-          ))}
+      <div className="skills-panel-body">
+        <div className={`skills-marquee-css ${revealed ? 'skills-hidden' : ''}`}>
+          <div className="skills-marquee-rows">
+            {MARQUEE_CATEGORIES.map((cat, rowIdx) => {
+              const loop = [...cat.items, ...cat.items]
+              const dirClass = rowIdx % 2 === 0 ? 'skills-track-l' : 'skills-track-r'
+              return (
+                <div key={cat.name} className="skills-marquee-row">
+                  <div className={`skills-track ${dirClass}`}>
+                    {loop.map((s, i) => (
+                      <span key={`${cat.name}-${i}`} className="skill-chip">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
-        <div className="skills-track skills-track-b">
-          {[...SKILL_ROW_B, ...SKILL_ROW_B].map((s, i) => (
-            <span key={`b-${i}`} className="skill-chip">
-              {s}
-            </span>
-          ))}
+        <div className={`skills-pills ${revealed ? 'skills-visible' : ''}`}>
+          <div className="skills-pills-scroll">
+            {SKILL_CATEGORIES.map((cat, ci) => (
+              <div key={cat.name} className="skills-cat-block">
+                <div className="skills-cat-label">{cat.name}</div>
+                <div className="skills-cat-pills">
+                  {cat.items.map((s, ii) => (
+                    <span
+                      key={`${cat.name}-${ii}-${s}`}
+                      className="pill skill-pill"
+                      style={{ animationDelay: `${(ci * 4 + ii) * 25}ms` }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="skills-tap-hint">TAP TO REVEAL</div>
-      </div>
-      <div className={`skills-pills ${revealed ? 'skills-visible' : ''}`}>
-        {ALL_SKILLS.map((s, i) => (
-          <span key={i} className="pill skill-pill" style={{ animationDelay: `${i * 30}ms` }}>
-            {s}
-          </span>
-        ))}
+        <div className="skills-tap-hint" aria-hidden={revealed}>
+          TAP TO REVEAL
+        </div>
       </div>
     </div>
   )
@@ -413,8 +541,7 @@ export function BentoSection() {
           <div className="bento-label">CURRENTLY BUILDING</div>
           <div className="now-title">PartyNI</div>
           <p className="now-desc">
-            An event vendor booking marketplace — connecting customers with vendors for any occasion.
-            Currently in Sprint 3: messaging system, notifications, refund flows.
+            An event vendor booking marketplace connecting customers with vendors for any occasion. Currently in pre-launch, cultivating our vendor base ahead of an upcoming public launch.
           </p>
           <div className="bento-divider" />
           <div className="bento-label">CURRENTLY LEARNING</div>
@@ -424,12 +551,19 @@ export function BentoSection() {
         <BentoCard className="bento-bad" span="bad">
           <div className="bento-label">I ♥ BADMINTON</div>
           <p className="bad-desc">
-            When I need to release stress, I play sports. Badminton is my go-to — TMU varsity team,
-            two-time ROPSA champion, OFSA appearances. Also coached youth and adult athletes with the
-            City of Brampton.
+            To decompress, I turn to sports. Badminton is my go-to: TMU varsity team, two-time ROPSA champion, OFSA finalist (runner-up). I currently coach youth and adult athletes with the City of Brampton.
           </p>
-          <div className="bad-thumb">
-            <ImgPlaceholder label="badminton.jpg" ratio="62%" />
+          <div className="bad-thumb bad-thumb--ratio">
+            {/* Badminton image path: `BENTO_BADMINTON_IMAGE_PATH` in `src/constants/imageAssets.js`. */}
+            <img
+              src={BENTO_BADMINTON_IMAGE_PATH}
+              alt="Badminton"
+              className="bad-thumb__img"
+              width={800}
+              height={496}
+              loading="lazy"
+              decoding="async"
+            />
           </div>
         </BentoCard>
       </BentoGrid>
@@ -491,7 +625,7 @@ export function CareerSection() {
             Career
           </ScrollReveal>
           <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-            From nuclear control rooms to assembly floors — shipping safe, working software.
+            From control rooms to production floors
           </ScrollReveal>
 
           <div className="resume-entries">
@@ -724,7 +858,7 @@ export function ProjectsSection() {
   )
 }
 
-/* ---------- Section 6: Connect ---------- */
+/* ---------- Section 6: Connect (primary email CTA; site <footer> in App.jsx is copyright only) ---------- */
 function ConnectCard({ href, label, sub, icon }) {
   return (
     <a className="connect-link" href={href} target="_blank" rel="noreferrer">
@@ -748,6 +882,72 @@ function ConnectCard({ href, label, sub, icon }) {
   )
 }
 
+function ConnectEmailCopyCard() {
+  const [subline, setSubline] = useState(CONTACT_EMAIL)
+  const [busy, setBusy] = useState(false)
+  const resetTimerRef = useRef(null)
+
+  useEffect(() => {
+    return () => {
+      if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+    }
+  }, [])
+
+  const handleClick = async (e) => {
+    if (busy) return
+    setBusy(true)
+    try {
+      await copyContactEmailToClipboard(e)
+      setSubline('Copied to clipboard')
+      if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+      resetTimerRef.current = window.setTimeout(() => {
+        setSubline(CONTACT_EMAIL)
+        resetTimerRef.current = null
+      }, 2200)
+    } catch {
+      setSubline('Could not copy — select the address manually')
+      if (resetTimerRef.current) window.clearTimeout(resetTimerRef.current)
+      resetTimerRef.current = window.setTimeout(() => {
+        setSubline(CONTACT_EMAIL)
+        resetTimerRef.current = null
+      }, 4000)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className="connect-link"
+      onClick={handleClick}
+      disabled={busy}
+      aria-label={`Copy ${CONTACT_EMAIL} to clipboard`}
+    >
+      <BorderGlow
+        glowColor="43 30 10"
+        colors={['#C9A84C', '#e8c878', '#C9A84C']}
+        borderRadius={16}
+        glowRadius={35}
+        glowIntensity={0.8}
+        animated={false}
+        backgroundColor="var(--bg-card)"
+        className="connect-card"
+      >
+        <div className="connect-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+        </div>
+        <div>
+          <div className="connect-name">Email</div>
+          <div className="connect-sub" aria-live="polite">
+            {subline}
+          </div>
+        </div>
+      </BorderGlow>
+    </button>
+  )
+}
+
 export function ConnectSection() {
   return (
     <section className="connect-section" id="connect">
@@ -757,7 +957,7 @@ export function ConnectSection() {
       </div>
       <div className="connect-cards">
         <ConnectCard
-          href="https://linkedin.com/"
+          href={SOCIAL_LINKEDIN}
           label="LinkedIn"
           sub="Professional profile"
           icon={
@@ -765,21 +965,14 @@ export function ConnectSection() {
           }
         />
         <ConnectCard
-          href="https://github.com/"
+          href={SOCIAL_GITHUB}
           label="GitHub"
           sub="Code & projects"
           icon={
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.12-1.47-1.12-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.55 9.55 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
           }
         />
-        <ConnectCard
-          href="mailto:hello@example.com"
-          label="Email"
-          sub="Send a message"
-          icon={
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-          }
-        />
+        <ConnectEmailCopyCard />
       </div>
     </section>
   )
