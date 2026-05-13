@@ -1291,6 +1291,15 @@ footer {
       "now"
       "bad";
   }
+  .bento-about { position: relative; min-height: 340px; }
+  .about-pager { position: relative; padding-bottom: 3.5rem; }
+  .about-pager-stage { min-height: 10rem; }
+  .about-pager-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    right: 0;
+  }
   .bento-section { padding-bottom: 4rem; }
   .bento-dog { width: 120px; height: 120px; right: -16px; bottom: -16px; }
   .about-pager-slide .bento-bio p { font-size: 0.88rem; }
