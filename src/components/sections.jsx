@@ -88,6 +88,7 @@ export function Hero() {
               colors={['#C9A84C', '#f0c060', '#C9A84C', '#e8a820', '#C9A84C']}
               animationSpeed={6}
               yoyo={true}
+              inline
             >
               Akash Kanagarajah
             </GradientText>

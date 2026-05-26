@@ -193,6 +193,7 @@ export function GradientText({
   yoyo = true,
   direction = 'horizontal',
   showBorder = false,
+  inline = false,
 }) {
   const [pos, setPos] = useState(0)
   const elapsedRef = useRef(0)
@@ -232,7 +233,7 @@ export function GradientText({
     WebkitBackgroundClip: 'text',
     backgroundClip: 'text',
     color: 'transparent',
-    display: 'inline-block',
+    display: inline ? 'inline' : 'inline-block',
   }
   return (
     <span className={`animated-gradient-text ${className}`} style={style}>
