@@ -270,9 +270,12 @@ section { padding: 7rem 8% 5rem; position: relative; }
 /* ───────── BENTO ───────── */
 .bento-section { padding-bottom: 6rem; }
 
-/* Reading shelf — follows About as the same beat, so it starts tighter. */
-.reading-section { padding-top: 3rem; padding-bottom: 6rem; }
-.reading-section .bs-stage { max-width: 1200px; margin: 0 auto; }
+/* Reading shelf — follows About as the same beat, so it starts tighter.
+   The stage is full-bleed: the section drops its horizontal gutter and the
+   heading carries the site's 8% inset itself. */
+.reading-section { padding-top: 3rem; padding-bottom: 6rem; padding-left: 0; padding-right: 0; }
+.reading-section .section-heading { padding-left: 8%; padding-right: 8%; }
+.reading-section .bs-stage { max-width: none; border-radius: 0; border-left: 0; border-right: 0; }
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

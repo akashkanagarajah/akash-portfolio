@@ -46,6 +46,9 @@ export interface ShowcaseBook {
   isbn: string | null;
   /** null -> the shared generic placeholder painter draws the cover instead. */
   coverURL: string | null;
+  /** Tried once if coverURL fails. Lets a local file in /public win while the
+      Open Library cover stays as a net, before falling back to the painter. */
+  coverFallbackURL?: string | null;
   edge: string;
   backBg: string;
   /** "r,g,b" — the reference builds rgba() strings from this. */
@@ -640,18 +643,19 @@ function createShowcase(o: EngineOptions): Engine {
        painted above stays on the mesh. This is the reference's fallback
        pattern, unchanged. */
     if (cfg.coverURL) {
-      new THREE.TextureLoader().setCrossOrigin("anonymous").load(
-        cfg.coverURL,
-        (t) => {
-          t.colorSpace = THREE.SRGBColorSpace;
-          t.anisotropy = ANISO;
-          mFront.map = t;
-          mFront.needsUpdate = true;
-          track(t);
-        },
-        undefined,
-        () => console.warn("Cover unavailable, placeholder kept:", cfg.title),
-      );
+      const loader = new THREE.TextureLoader().setCrossOrigin("anonymous");
+      const apply = (t: THREE.Texture) => {
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = ANISO;
+        mFront.map = t;
+        mFront.needsUpdate = true;
+        track(t);
+      };
+      const give_up = () => console.warn("Cover unavailable, placeholder kept:", cfg.title);
+      loader.load(cfg.coverURL, apply, undefined, () => {
+        if (!cfg.coverFallbackURL) return give_up();
+        loader.load(cfg.coverFallbackURL, apply, undefined, give_up);
+      });
     }
 
     const backPivot = new THREE.Group();
@@ -912,11 +916,21 @@ function createShowcase(o: EngineOptions): Engine {
   const spacingFor = (portrait: boolean) =>
     portrait ? Math.min(PORT_SPACING, 4.4 / Math.max(1, N - 1)) : LAND_SPACING;
 
-  function heroSlot(i: number, portrait: boolean): Slot {
+  /* The reference is a phone-ish full-viewport app, so its fixed spacing always
+     filled the frame. This stage is now full-bleed and can be very wide, where
+     fixed spacing leaves the fan as a narrow strip in the middle of a wide black
+     band. `spread` widens the fan with the aspect so it uses the width it has.
+     At a === 1.75 (the reference's own fit pivot) it is exactly 1, so nothing
+     changes at the aspect the composition was tuned at. Spacing only — slot
+     curves, rotations and per-slot scales are untouched. */
+  const spreadFor = (portrait: boolean, a: number) =>
+    portrait ? 1 : clamp(a / 1.75, 1, 1.45);
+
+  function heroSlot(i: number, portrait: boolean, spread: number): Slot {
     const half = Math.max(1, (N - 1) / 2);
     const u = (i - (N - 1) / 2) / half;
     const au = Math.abs(u);
-    const spacing = spacingFor(portrait);
+    const spacing = spacingFor(portrait) * spread;
     const cx = portrait ? 0.2 : 0.3;
     const x = cx + u * spacing * half;
     const y = portrait ? -0.45 - 0.275 * au - 0.05 * u : -1.08 - 0.24 * au - 0.09 * u;
@@ -934,7 +948,7 @@ function createShowcase(o: EngineOptions): Engine {
     SLOTS.portrait = portrait;
     stage.classList.toggle("is-portrait", portrait);
 
-    SLOTS.hero = books.map((_, i) => heroSlot(i, portrait));
+    SLOTS.hero = books.map((_, i) => heroSlot(i, portrait, spreadFor(portrait, a)));
 
     /* The reference lets the fan run off every edge of the screen — it is a
        full-viewport app with exactly three books, and there the crop reads as
@@ -985,22 +999,35 @@ function createShowcase(o: EngineOptions): Engine {
        derived from the fan's own height so it lands just below centre, under
        the stage word. Framing only — no slot, spring or camera value changes. */
     const fanH = (high - low) * fit;
-    const SEAT = SLOTS.portrait ? Math.max(0.6, halfVis * 0.9 - fanH / 2) : 1.15;
+    const SEAT = SLOTS.portrait ? Math.max(0.6, halfVis * 0.9 - fanH / 2) : 0.9;
     bookRoot.position.y = -halfVis + SEAT - low * fit;
 
     if (portrait) {
-      const panelH = panel.offsetHeight > 40 ? panel.offsetHeight : VH * 0.44;
-      const gap = VH * 0.035,
-        navB = VH * 0.1;
-      const freeTop = navB;
-      const freeBot = Math.max(VH - panelH - gap, freeTop + 140);
+      /* Phone detail composition: the opened book owns the top of the stage and
+         the panel owns the bottom, the way the reference app stacks them.
+
+         The reference measured the panel with panel.offsetHeight. That cannot
+         work here: computeSlots() runs inside open(), in the same tick as the
+         React state update that fills the panel, so the panel is still empty
+         and offsetHeight falls through to a guess. The split is therefore a
+         fixed fraction of the stage — PANEL_FRAC matches the height the panel
+         actually settles at with a four-line clamped note. */
+      const PANEL_FRAC = 0.54;
+      const freeTop = VH * 0.06;
+      const freeBot = VH * (1 - PANEL_FRAC);
       const midPx = (freeTop + freeBot) / 2;
       const T13 = 0.23087,
         camZp = 9.9,
         zw = 0.8 * fit;
       const yw = 0.1 + (1 - (2 * midPx) / VH) * T13 * (camZp - zw);
-      const availW = (((freeBot - freeTop) * 0.92) / VH) * 2 * T13 * (camZp - zw);
-      const s = clamp(availW / fit / 2.3, 0.5, 1.15);
+      /* 0.84, not the reference's 0.92: the opened book is yawed and rolled and
+         sits nearer the camera than the plane this solves against, so its
+         projected height overruns a band sized at 0.92 and clips the top. */
+      const availW = (((freeBot - freeTop) * 0.84) / VH) * 2 * T13 * (camZp - zw);
+      /* The reference capped this at 1.15, which was the real reason the opened
+         book stayed small: the cap bound long before the free band did. Raised
+         so the book fills the band it was already being sized against. */
+      const s = clamp(availW / fit / 2.3, 0.5, 2.4);
       /* uses the lifted root offset, not the reference's raw -(1-fit)*0.55 */
       SLOTS.detail = {
         p: [0, (yw - bookRoot.position.y) / fit, 0.8],

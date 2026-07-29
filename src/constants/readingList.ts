@@ -55,7 +55,10 @@ export const READING_LIST: ShowcaseBook[] = [
     desc: "Slower reading than the rest of this shelf, and deliberately so — a chapter at a time rather than start to finish. Reading it for the perspective more than the narrative.",
     trackUrl: goodreads("Autobiography of a Yogi Paramahansa Yogananda"),
     isbn: "9780876120798",
-    coverURL: coverFromISBN("9780876120798"),
+    /* The illustrated mandala edition is not on Open Library, so this one ships
+       its own cover file. Open Library stays as the fallback if it is missing. */
+    coverURL: "/covers/autobiography-of-a-yogi.jpg",
+    coverFallbackURL: coverFromISBN("9780876120798"),
     edge: "#2a2118",
     backBg: "#241c12",
     backInk: "240,225,190",

@@ -16,7 +16,7 @@
   position: relative;
   isolation: isolate;
   width: 100%;
-  height: clamp(520px, 74vh, 780px);
+  height: clamp(560px, 78vh, 860px);
   overflow: hidden;
   border-radius: 1.5rem;
   border: 1px solid var(--accent-border);
@@ -26,10 +26,11 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Shorter than landscape on purpose. The fan is width-limited in portrait, so a
-   tall box just adds dead space above the books — see WIDTH_USE in computeSlots. */
+/* Tall on purpose: the detail view stacks the opened book over the panel, and
+   PANEL_FRAC in computeSlots splits this height between them. The hero fan is
+   width-limited here, so the adaptive SEAT centres it in whatever is left. */
 .bs-stage.is-portrait {
-  height: clamp(400px, 58vh, 540px);
+  height: clamp(500px, 64vh, 600px);
 }
 
 /* Header chrome drawn over the scene, so the whole thing reads as one unit —
@@ -135,7 +136,7 @@
   display: block;
   white-space: nowrap;
   font-family: "Cormorant Garamond", serif;
-  font-size: min(11vw, 16vh);
+  font-size: min(9vw, 13vh);
   font-weight: 600;
   letter-spacing: 0.02em;
   line-height: 0.85;
@@ -516,11 +517,13 @@
   font-size: clamp(24px, 7vw, 34px);
 }
 
+/* Three lines, not four: PANEL_FRAC reserves the bottom of the stage for this
+   panel, and a fourth line pushes its top edge up into the opened book. */
 .bs-stage.is-portrait .bs-dp-desc {
   font-size: 14px;
-  margin-top: 14px;
+  margin-top: 12px;
   display: -webkit-box;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -549,6 +552,13 @@
   top: 16px;
   left: auto;
   right: 16px;
+}
+
+/* Keep the hint on one line on a phone. */
+.bs-stage.is-portrait .bs-hint {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 .bs-fail {
