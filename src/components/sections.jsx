@@ -581,7 +581,7 @@ export function BentoSection() {
 export function ReadingSection() {
   return (
     <section className="reading-section" id="reading">
-      <div className="section-heading">
+      <div className="section-heading center">
         <span className="section-label">Reading</span>
         <h2 className="section-title">What&rsquo;s on the shelf.</h2>
         <p className="section-sub">
@@ -589,11 +589,7 @@ export function ReadingSection() {
         </p>
       </div>
 
-      <BookShowcase
-        books={READING_LIST}
-        word="Shelf"
-        ariaLabel="Reading list — interactive 3D bookshelf"
-      />
+      <BookShowcase books={READING_LIST} ariaLabel="Reading list, interactive 3D bookshelf" />
     </section>
   )
 }

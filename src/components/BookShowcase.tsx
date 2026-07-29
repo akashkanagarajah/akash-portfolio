@@ -979,8 +979,9 @@ function createShowcase(o: EngineOptions): Engine {
     /* Portrait is width-limited, so it gets nearly the whole box; landscape
        keeps the reference's margin. */
     const WIDTH_USE = portrait ? 0.99 : 0.94;
-    /* Slightly shorter fan so the stage word stays readable above it */
-    const HEIGHT_USE = 0.62;
+    /* The reference held this at 0.62 to keep its stage word readable above the
+       fan. There is no stage word any more, so the fan takes the height back. */
+    const HEIGHT_USE = 0.72;
     const fitW = (halfVis * a * WIDTH_USE) / halfW;
     const fitH = (halfVis * 2 * HEIGHT_USE) / (high - low);
     const fit = Math.min(clamp(a / 1.75, 0.56, 1), fitW, fitH);
@@ -994,12 +995,15 @@ function createShowcase(o: EngineOptions): Engine {
        section-height box it seats the covers hard against the lower edge and
        they read as clipped, so the fan is lifted clear of it.
 
-       In portrait the fan is width-limited, so it ends up short and a fixed
-       seat leaves it stranded at the bottom of the box; there the seat is
-       derived from the fan's own height so it lands just below centre, under
-       the stage word. Framing only — no slot, spring or camera value changes. */
+       Both orientations now derive the seat from the fan's own height so it
+       sits centred in the box. Portrait needs this most — the fan is
+       width-limited there, so a fixed seat strands it at the bottom — but with
+       the stage word gone landscape has no reason to sit high either. The floor
+       keeps a margin under the fan: `low` under-measures the real bottom edge
+       (rolled corners, contact shadow), so seating tight to it reads as
+       clipped. Framing only — no slot, spring or camera value changes. */
     const fanH = (high - low) * fit;
-    const SEAT = SLOTS.portrait ? Math.max(0.6, halfVis * 0.9 - fanH / 2) : 0.9;
+    const SEAT = Math.max(SLOTS.portrait ? 0.6 : 0.75, halfVis - fanH / 2);
     bookRoot.position.y = -halfVis + SEAT - low * fit;
 
     if (portrait) {
@@ -1685,8 +1689,6 @@ function createShowcase(o: EngineOptions): Engine {
    ========================================================================= */
 interface BookShowcaseProps {
   books: ShowcaseBook[];
-  /** Large word behind the fan, e.g. the tab name. */
-  word: string;
   ariaLabel: string;
   /** Extra classes on the stage, e.g. `bs-stage--full` for a full-viewport section. */
   className?: string;
@@ -1702,7 +1704,6 @@ interface BookShowcaseProps {
 
 export default function BookShowcase({
   books,
-  word,
   ariaLabel,
   className = "",
   actionLabel = "View on Goodreads",
@@ -1716,9 +1717,6 @@ export default function BookShowcase({
   const engineRef = useRef<Engine | null>(null);
   const [selected, setSelected] = useState<ShowcaseBook | null>(null);
   const [failed, setFailed] = useState(false);
-  /* Bumps when returning from detail so the stage word remounts and re-enters. Tab
-     switches remount the whole showcase via the page's `key`. */
-  const [wordAnimKey, setWordAnimKey] = useState(0);
 
   useEffect(() => {
     const stage = stageRef.current,
@@ -1744,7 +1742,9 @@ export default function BookShowcase({
           books,
           onOpen: (i) => setSelected(books[i]),
           onDetailShown: () => {},
-          onShelfVisible: () => setWordAnimKey((k) => k + 1),
+          /* The reference re-entered its stage word here. There is no stage
+             word any more, so nothing to do — the engine still calls it. */
+          onShelfVisible: () => {},
           onClosed: () => setSelected(null),
         });
       } catch (err) {
@@ -1767,15 +1767,6 @@ export default function BookShowcase({
       role="group"
       aria-label={ariaLabel}
     >
-      <div className="bs-word" aria-hidden="true">
-        <div key={`${word}-${wordAnimKey}`} className="bs-word-in">
-          {/* The source used its GradientText component here. That one is
-              Tailwind-classed and this project has no Tailwind, so the same
-              looping gradient sweep is done in BookShowcase.css instead. */}
-          <span className="bs-word-gradient">{word}</span>
-        </div>
-      </div>
-
       <canvas ref={canvasRef} className="bs-canvas" />
 
       {overlay && <div className="bs-overlay">{overlay}</div>}

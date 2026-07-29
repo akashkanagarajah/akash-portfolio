@@ -1,13 +1,14 @@
 /* 3D book showcase — ported from https://github.com/thebuggeddev/books
    (single-file vanilla three.js demo) into a container-scoped React component.
 
-   Recolored from the source port's forest/leaf/navy palette onto this site's
-   gold-on-near-black: accent #C9A84C, warm ink #f0ede8, ground #0c0c0c.
-   Type is the site's Jost / Cormorant Garamond pairing.
+   Recolored from the source port's forest/leaf/navy palette onto the site's own
+   CSS variables, so the stage follows the page in both themes.
 
-   The stage stays dark in both themes on purpose — the WebGL scene's
-   environment map and lights are baked warm-dark, so it reads as a lit display
-   case rather than a panel that flips with the page.
+   The stage is deliberately seamless: no background of its own, no border, no
+   radius. The source drew it as a framed display case, which left a visible
+   cut between this section and the one above it. The renderer is created with
+   alpha: true, so the canvas composites straight onto the page background and
+   the books read as floating in the page rather than inside a panel.
 
    No backdrop-filter anywhere. Every CSS-driven motion outside the WebGL canvas
    is transform/opacity only, so it stays on the compositor. */
@@ -18,10 +19,8 @@
   width: 100%;
   height: clamp(560px, 78vh, 860px);
   overflow: hidden;
-  border-radius: 1.5rem;
-  border: 1px solid var(--accent-border);
-  background: radial-gradient(120% 100% at 50% 0%, #23201a 0%, #141210 52%, #0a0908 100%);
-  color: #f0ede8;
+  background: transparent;
+  color: var(--text);
   font-family: "Jost", system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
@@ -62,13 +61,13 @@
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.01em;
-  color: #f0ede8;
+  color: var(--text);
 }
 
 .bs-overlay-sub {
   margin: 8px auto 0;
   max-width: 46ch;
-  color: rgba(240, 237, 232, 0.62);
+  color: var(--text-muted);
   font-size: clamp(13px, 1vw, 15px);
   line-height: 1.6;
 }
@@ -114,66 +113,6 @@
 .bs-stage a:focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 3px;
-}
-
-/* ---------- stage word ----------
-   The source used its GradientText component here; that one is Tailwind-classed
-   and this project has no Tailwind, so the looping sweep is plain CSS. */
-.bs-word {
-  position: absolute;
-  top: 3%;
-  left: 50%;
-  z-index: 1;
-  user-select: none;
-  pointer-events: none;
-  transform: translate3d(-50%, 0, 0);
-  transition:
-    opacity 0.55s ease,
-    transform 0.55s ease;
-}
-
-.bs-word-gradient {
-  display: block;
-  white-space: nowrap;
-  font-family: "Cormorant Garamond", serif;
-  font-size: min(9vw, 13vh);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  line-height: 0.85;
-  background: linear-gradient(90deg, #6b5a28, #c9a84c, #f0c060, #c9a84c, #6b5a28);
-  background-size: 300% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  opacity: 0.34;
-  animation: bs-word-sweep 9s linear infinite;
-}
-
-@keyframes bs-word-sweep {
-  to {
-    background-position: 300% 50%;
-  }
-}
-
-.bs-word-in {
-  animation: bs-word-in 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes bs-word-in {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 28px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
-.bs-stage.is-detail .bs-word,
-.bs-stage.is-transit .bs-word {
-  opacity: 0;
-  transform: translate3d(-50%, -44px, 0);
 }
 
 /* ---------- open slip: a torn scrap of page that trails the cursor ----------
@@ -264,13 +203,13 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background-color: #17140f;
+  background-color: var(--bg-card);
   border: none;
   font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.26);
+  box-shadow: 0 0 0 4px var(--accent-border);
   cursor: pointer;
   overflow: hidden;
   opacity: 0;
@@ -292,7 +231,7 @@
 }
 
 .bs-back-icon path {
-  fill: #f0ede8;
+  fill: var(--text);
 }
 
 .bs-back:hover {
@@ -313,7 +252,7 @@
   position: absolute;
   bottom: -20px;
   content: "Back";
-  color: #17140f;
+  color: var(--bg);
   font-size: 0;
   font-weight: 500;
   letter-spacing: 0.08em;
@@ -384,7 +323,7 @@
 
 .bs-dp-title {
   margin: 0;
-  color: #f0ede8;
+  color: var(--text);
   font-family: "Cormorant Garamond", serif;
   font-size: clamp(28px, 3vw, 44px);
   font-weight: 500;
@@ -394,7 +333,7 @@
 
 .bs-dp-desc {
   margin: 18px 0 0;
-  color: rgba(240, 237, 232, 0.72);
+  color: var(--text-muted);
   font-size: clamp(14px, 1.05vw, 16px);
   line-height: 1.7;
   font-weight: 400;
@@ -414,9 +353,9 @@
   display: inline-flex;
   align-items: center;
   border-radius: 100px;
-  background: rgba(201, 168, 76, 0.1);
-  border: 1px solid rgba(201, 168, 76, 0.28);
-  color: var(--accent-2);
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
+  color: var(--tag-text);
   padding: 4px 14px;
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -424,31 +363,31 @@
 }
 
 .bs-dp-status--reading {
-  background: rgba(240, 192, 96, 0.14);
-  border-color: rgba(240, 192, 96, 0.45);
-  color: #f0c060;
+  background: var(--accent-subtle);
+  border-color: var(--accent-border-hover);
+  color: var(--accent-2);
 }
 
 .bs-dp-status--finished {
-  background: rgba(201, 168, 76, 0.08);
-  border-color: rgba(201, 168, 76, 0.24);
-  color: rgba(201, 168, 76, 0.85);
+  background: var(--tag-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
 }
 
 .bs-dp-status--want-to-read {
-  background: rgba(240, 237, 232, 0.06);
-  border-color: rgba(240, 237, 232, 0.18);
-  color: rgba(240, 237, 232, 0.6);
+  background: var(--stripe);
+  border-color: var(--border-hover);
+  color: var(--text-muted);
 }
 
 .bs-dp-sep {
   width: 1px;
   height: 18px;
-  background: rgba(240, 237, 232, 0.22);
+  background: var(--border-hover);
 }
 
 .bs-dp-src {
-  color: rgba(240, 237, 232, 0.7);
+  color: var(--text-muted);
   font-family: "Cormorant Garamond", serif;
   font-style: italic;
   font-size: 17px;
@@ -456,7 +395,7 @@
 
 .bs-dp-rule {
   margin-top: 22px;
-  border-top: 1px solid rgba(240, 237, 232, 0.14);
+  border-top: 1px solid var(--border);
 }
 
 .bs-dp-actions {
@@ -464,10 +403,12 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  background: #17140f;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 999px;
   padding: 8px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  /* Soft enough to work on cream; the source's 0.5 black read as a smudge. */
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
   pointer-events: auto;
 }
 
@@ -482,7 +423,7 @@
   gap: 10px;
   text-decoration: none;
   background: var(--accent);
-  color: #17140f;
+  color: var(--bg);
   transition:
     transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
     filter 0.2s;
@@ -500,10 +441,6 @@
 }
 
 /* ---------- portrait / small stages ---------- */
-.bs-stage.is-portrait .bs-word-gradient {
-  font-size: 21vw;
-}
-
 .bs-stage.is-portrait .bs-dp {
   right: auto;
   left: 50%;
@@ -570,7 +507,7 @@
   justify-content: center;
   text-align: center;
   padding: 40px;
-  color: rgba(240, 237, 232, 0.8);
+  color: var(--text-muted);
   font-size: 16px;
   line-height: 1.6;
 }
@@ -581,7 +518,7 @@
   bottom: 18px;
   z-index: 20;
   transform: translate3d(-50%, 0, 0);
-  color: rgba(240, 237, 232, 0.42);
+  color: var(--text-muted);
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
