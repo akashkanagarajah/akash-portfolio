@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Hero, BentoSection, CareerSection, EducationSection, ProjectsSection, ConnectSection, Dock } from './components/sections'
+import { Hero, BentoSection, ReadingSection, CareerSection, EducationSection, ProjectsSection, ConnectSection, Dock } from './components/sections'
 
 export default function App() {
   const [theme, setTheme] = useState('dark')
@@ -11,6 +11,7 @@ export default function App() {
     <>
       <Hero />
       <BentoSection />
+      <ReadingSection />
       <CareerSection />
       <EducationSection />
       <ProjectsSection />

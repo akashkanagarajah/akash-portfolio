@@ -8,11 +8,13 @@ import {
   BentoCard,
 } from './animations'
 import DockComponent from './Dock'
+import BookShowcase from './BookShowcase'
 import {
   HERO_PROFILE_PRIMARY_PATH,
   HERO_PROFILE_HOVER_PATH,
   BENTO_BADMINTON_IMAGE_PATH,
 } from '../constants/imageAssets'
+import { READING_LIST } from '../constants/readingList'
 import { CONTACT_EMAIL, copyContactEmailToClipboard } from '../lib/copyEmailConfetti'
 
 const SOCIAL_LINKEDIN = 'https://www.linkedin.com/in/akash-k-617498178/'
@@ -568,6 +570,30 @@ export function BentoSection() {
           </div>
         </BentoCard>
       </BentoGrid>
+    </section>
+  )
+}
+
+/* ---------- Section 2b: Reading shelf (3D) ----------
+   Sits under About because it is the same "a bit about me" beat. The 3D stage
+   builds its whole scene inside BookShowcase's useEffect, so nothing here
+   touches WebGL at module scope. */
+export function ReadingSection() {
+  return (
+    <section className="reading-section" id="reading">
+      <div className="section-heading">
+        <span className="section-label">Reading</span>
+        <h2 className="section-title">What&rsquo;s on the shelf.</h2>
+        <p className="section-sub">
+          What I&rsquo;m reading and what stuck. Click a book to open it, drag to spin it.
+        </p>
+      </div>
+
+      <BookShowcase
+        books={READING_LIST}
+        word="Shelf"
+        ariaLabel="Reading list — interactive 3D bookshelf"
+      />
     </section>
   )
 }

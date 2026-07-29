@@ -1,0 +1,594 @@
+/* 3D book showcase — ported from https://github.com/thebuggeddev/books
+   (single-file vanilla three.js demo) into a container-scoped React component.
+
+   Recolored from the source port's forest/leaf/navy palette onto this site's
+   gold-on-near-black: accent #C9A84C, warm ink #f0ede8, ground #0c0c0c.
+   Type is the site's Jost / Cormorant Garamond pairing.
+
+   The stage stays dark in both themes on purpose — the WebGL scene's
+   environment map and lights are baked warm-dark, so it reads as a lit display
+   case rather than a panel that flips with the page.
+
+   No backdrop-filter anywhere. Every CSS-driven motion outside the WebGL canvas
+   is transform/opacity only, so it stays on the compositor. */
+
+.bs-stage {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: clamp(520px, 74vh, 780px);
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--accent-border);
+  background: radial-gradient(120% 100% at 50% 0%, #23201a 0%, #141210 52%, #0a0908 100%);
+  color: #f0ede8;
+  font-family: "Jost", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Shorter than landscape on purpose. The fan is width-limited in portrait, so a
+   tall box just adds dead space above the books — see WIDTH_USE in computeSlots. */
+.bs-stage.is-portrait {
+  height: clamp(400px, 58vh, 540px);
+}
+
+/* Header chrome drawn over the scene, so the whole thing reads as one unit —
+   the way the reference overlays its nav on the scene. */
+.bs-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: clamp(18px, 3.2vh, 36px) clamp(20px, 4vw, 56px) 0;
+  pointer-events: none;
+}
+
+.bs-overlay > * {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.bs-overlay-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: #f0ede8;
+}
+
+.bs-overlay-sub {
+  margin: 8px auto 0;
+  max-width: 46ch;
+  color: rgba(240, 237, 232, 0.62);
+  font-size: clamp(13px, 1vw, 15px);
+  line-height: 1.6;
+}
+
+/* Title and blurb step aside while a book is open. */
+.bs-stage.is-detail .bs-overlay-title,
+.bs-stage.is-transit .bs-overlay-title,
+.bs-stage.is-detail .bs-overlay-sub,
+.bs-stage.is-transit .bs-overlay-sub {
+  opacity: 0;
+  transform: translate3d(0, -18px, 0);
+  pointer-events: none;
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+}
+
+.bs-overlay-title,
+.bs-overlay-sub {
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+  will-change: transform, opacity;
+}
+
+.bs-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.bs-stage button {
+  font-family: inherit;
+  cursor: pointer;
+  border: 0;
+}
+
+.bs-stage button:focus-visible,
+.bs-stage a:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+/* ---------- stage word ----------
+   The source used its GradientText component here; that one is Tailwind-classed
+   and this project has no Tailwind, so the looping sweep is plain CSS. */
+.bs-word {
+  position: absolute;
+  top: 3%;
+  left: 50%;
+  z-index: 1;
+  user-select: none;
+  pointer-events: none;
+  transform: translate3d(-50%, 0, 0);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s ease;
+}
+
+.bs-word-gradient {
+  display: block;
+  white-space: nowrap;
+  font-family: "Cormorant Garamond", serif;
+  font-size: min(11vw, 16vh);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 0.85;
+  background: linear-gradient(90deg, #6b5a28, #c9a84c, #f0c060, #c9a84c, #6b5a28);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  opacity: 0.34;
+  animation: bs-word-sweep 9s linear infinite;
+}
+
+@keyframes bs-word-sweep {
+  to {
+    background-position: 300% 50%;
+  }
+}
+
+.bs-word-in {
+  animation: bs-word-in 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes bs-word-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.bs-stage.is-detail .bs-word,
+.bs-stage.is-transit .bs-word {
+  opacity: 0;
+  transform: translate3d(-50%, -44px, 0);
+}
+
+/* ---------- open slip: a torn scrap of page that trails the cursor ----------
+   clip-path gives every edge a deckled tear; drop-shadow (not box-shadow) is
+   used so the shadow follows the torn silhouette instead of a rectangle.
+   The anchor carries the spring position as a translate3d so the follow motion
+   is composited; the slip itself only ever animates transform + opacity. */
+.bs-pill-anchor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.bs-pill {
+  display: block;
+  padding: 13px 32px 15px;
+  border: 0;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(92deg, rgba(90, 72, 28, 0.06) 0 2px, transparent 2px 6px),
+    radial-gradient(125% 150% at 28% 0%, #fffdf6 0%, #f5eeda 58%, #e2d6b6 100%);
+  color: #3a2d0c;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  clip-path: polygon(
+    0% 0.9%,
+    8.3% 0.8%,
+    16.7% 6.3%,
+    25% 3.8%,
+    33.3% 5.5%,
+    41.7% 2.7%,
+    50% 5.2%,
+    58.3% 0.4%,
+    66.7% 5.9%,
+    75% 6.5%,
+    83.3% 1%,
+    91.7% 6.4%,
+    100% 0.7%,
+    97.7% 20%,
+    97% 40%,
+    99.6% 60%,
+    98.7% 80%,
+    100% 96.5%,
+    91.7% 99.8%,
+    83.3% 95.6%,
+    75% 94.9%,
+    66.7% 96.6%,
+    58.3% 93.5%,
+    50% 97.9%,
+    41.7% 99.5%,
+    33.3% 93.2%,
+    25% 93.6%,
+    16.7% 93.2%,
+    8.3% 93.1%,
+    0% 93.5%,
+    0.2% 80%,
+    1.1% 60%,
+    3.9% 40%,
+    3.8% 20%
+  );
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.2)) drop-shadow(0 14px 26px rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-50%, -50%, 0) rotate(-1.6deg) scale(0.94);
+  transition:
+    opacity 0.24s ease,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.bs-pill.is-on {
+  opacity: 1;
+  transform: translate3d(-50%, -50%, 0) rotate(-1.6deg) scale(1);
+}
+
+/* ---------- back button (expand-on-hover, left arrow) ---------- */
+.bs-back {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  left: auto;
+  z-index: 40;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #17140f;
+  border: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px rgba(201, 168, 76, 0.26);
+  cursor: pointer;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.4s ease 0.15s,
+    width 0.3s ease,
+    border-radius 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.bs-back-icon {
+  width: 14px;
+  height: 14px;
+  transition:
+    transform 0.3s ease,
+    opacity 0.25s ease;
+  flex-shrink: 0;
+}
+
+.bs-back-icon path {
+  fill: #f0ede8;
+}
+
+.bs-back:hover {
+  width: 120px;
+  border-radius: 50px;
+  transition-duration: 0.3s;
+  background-color: var(--accent);
+  align-items: center;
+}
+
+.bs-back:hover .bs-back-icon {
+  /* Far enough + faded that no tip remains inside the pill */
+  transform: translateY(-280%);
+  opacity: 0;
+}
+
+.bs-back::before {
+  position: absolute;
+  bottom: -20px;
+  content: "Back";
+  color: #17140f;
+  font-size: 0;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.bs-back:hover::before {
+  font-size: 13px;
+  opacity: 1;
+  bottom: unset;
+  transition-duration: 0.3s;
+}
+
+.bs-stage.is-detail .bs-back {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---------- detail panel ---------- */
+.bs-dp {
+  position: absolute;
+  right: 6%;
+  top: 50%;
+  width: min(460px, 44%);
+  z-index: 15;
+  pointer-events: none;
+  visibility: hidden;
+  transform: translate3d(0, -50%, 0);
+  transition: visibility 0s 0.5s;
+}
+
+.bs-stage.is-detail .bs-dp {
+  visibility: visible;
+  transition: visibility 0s 0s;
+}
+
+.bs-dp > * {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 0.28s ease,
+    transform 0.28s ease;
+}
+
+.bs-stage.is-detail .bs-dp > * {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bs-stage.is-detail .bs-dp > *:nth-child(1) {
+  transition-delay: 0.05s;
+}
+.bs-stage.is-detail .bs-dp > *:nth-child(2) {
+  transition-delay: 0.13s;
+}
+.bs-stage.is-detail .bs-dp > *:nth-child(3) {
+  transition-delay: 0.21s;
+}
+.bs-stage.is-detail .bs-dp > *:nth-child(4) {
+  transition-delay: 0.27s;
+}
+.bs-stage.is-detail .bs-dp > *:nth-child(5) {
+  transition-delay: 0.33s;
+}
+
+.bs-dp-title {
+  margin: 0;
+  color: #f0ede8;
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(28px, 3vw, 44px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.bs-dp-desc {
+  margin: 18px 0 0;
+  color: rgba(240, 237, 232, 0.72);
+  font-size: clamp(14px, 1.05vw, 16px);
+  line-height: 1.7;
+  font-weight: 400;
+  max-width: 54ch;
+}
+
+.bs-dp-meta {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/* Same shape as the site's .pill; status hue carries the state. */
+.bs-dp-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 100px;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.28);
+  color: var(--accent-2);
+  padding: 4px 14px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bs-dp-status--reading {
+  background: rgba(240, 192, 96, 0.14);
+  border-color: rgba(240, 192, 96, 0.45);
+  color: #f0c060;
+}
+
+.bs-dp-status--finished {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.24);
+  color: rgba(201, 168, 76, 0.85);
+}
+
+.bs-dp-status--want-to-read {
+  background: rgba(240, 237, 232, 0.06);
+  border-color: rgba(240, 237, 232, 0.18);
+  color: rgba(240, 237, 232, 0.6);
+}
+
+.bs-dp-sep {
+  width: 1px;
+  height: 18px;
+  background: rgba(240, 237, 232, 0.22);
+}
+
+.bs-dp-src {
+  color: rgba(240, 237, 232, 0.7);
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-size: 17px;
+}
+
+.bs-dp-rule {
+  margin-top: 22px;
+  border-top: 1px solid rgba(240, 237, 232, 0.14);
+}
+
+.bs-dp-actions {
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #17140f;
+  border-radius: 999px;
+  padding: 8px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+.bs-action {
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  background: var(--accent);
+  color: #17140f;
+  transition:
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 0.2s;
+  will-change: transform;
+}
+
+.bs-action:hover {
+  transform: scale(1.04);
+  filter: brightness(1.08);
+}
+
+.bs-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- portrait / small stages ---------- */
+.bs-stage.is-portrait .bs-word-gradient {
+  font-size: 21vw;
+}
+
+.bs-stage.is-portrait .bs-dp {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: 3.5%;
+  transform: translate3d(-50%, 0, 0);
+  width: min(520px, 92%);
+}
+
+.bs-stage.is-portrait .bs-dp-title {
+  font-size: clamp(24px, 7vw, 34px);
+}
+
+.bs-stage.is-portrait .bs-dp-desc {
+  font-size: 14px;
+  margin-top: 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bs-stage.is-portrait .bs-dp-meta {
+  margin-top: 16px;
+}
+
+.bs-stage.is-portrait .bs-dp-rule {
+  margin-top: 14px;
+}
+
+.bs-stage.is-portrait .bs-dp-actions {
+  margin-top: 16px;
+  flex-wrap: wrap;
+  border-radius: 28px;
+}
+
+.bs-stage.is-portrait .bs-action {
+  height: 44px;
+  padding: 0 18px;
+  font-size: 14px;
+}
+
+.bs-stage.is-portrait .bs-back {
+  top: 16px;
+  left: auto;
+  right: 16px;
+}
+
+.bs-fail {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+  color: rgba(240, 237, 232, 0.8);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.bs-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 20;
+  transform: translate3d(-50%, 0, 0);
+  color: rgba(240, 237, 232, 0.42);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.bs-stage.is-detail .bs-hint,
+.bs-stage.is-transit .bs-hint {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-stage *,
+  .bs-stage *::before,
+  .bs-stage *::after {
+    animation-duration: 0.01s !important;
+    transition-duration: 0.01s !important;
+  }
+}

@@ -269,6 +269,10 @@ section { padding: 7rem 8% 5rem; position: relative; }
 
 /* ───────── BENTO ───────── */
 .bento-section { padding-bottom: 6rem; }
+
+/* Reading shelf — follows About as the same beat, so it starts tighter. */
+.reading-section { padding-top: 3rem; padding-bottom: 6rem; }
+.reading-section .bs-stage { max-width: 1200px; margin: 0 auto; }
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
