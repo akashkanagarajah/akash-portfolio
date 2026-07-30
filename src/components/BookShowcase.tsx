@@ -1017,7 +1017,9 @@ function createShowcase(o: EngineOptions): Engine {
          fixed fraction of the stage — PANEL_FRAC matches the height the panel
          actually settles at with a four-line clamped note. */
       const PANEL_FRAC = 0.54;
-      const freeTop = VH * 0.06;
+      /* Clears the close button, which is centred at the top of the stage in
+         portrait and would otherwise sit on the opened book's cover. */
+      const freeTop = VH * 0.11;
       const freeBot = VH * (1 - PANEL_FRAC);
       const midPx = (freeTop + freeBot) / 2;
       const T13 = 0.23087,
@@ -1783,11 +1785,11 @@ export default function BookShowcase({
       <button
         type="button"
         className="bs-back"
-        aria-label="Back to books"
+        aria-label="Close book"
         onClick={() => engineRef.current?.close()}
       >
-        <svg className="bs-back-icon" viewBox="0 0 384 512" aria-hidden="true">
-          <path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 278.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z" />
+        <svg className="bs-back-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M18.3 5.71 12 12.01l-6.3-6.3-1.41 1.42 6.3 6.29-6.3 6.29 1.41 1.42 6.3-6.3 6.3 6.3 1.41-1.42-6.29-6.29 6.29-6.29z" />
         </svg>
       </button>
 

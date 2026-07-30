@@ -193,12 +193,16 @@
   transform: translate3d(-50%, -50%, 0) rotate(-1.6deg) scale(1);
 }
 
-/* ---------- back button (expand-on-hover, left arrow) ---------- */
+/* ---------- close button (expand-on-hover, X) ----------
+   Centred on the stage rather than the source's top-right corner. The
+   translateX(-50%) has to survive the hover width change, so the button grows
+   outward from its centre instead of shifting. */
 .bs-back {
   position: absolute;
   top: 22px;
-  right: 24px;
-  left: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   z-index: 40;
   width: 50px;
   height: 50px;
@@ -222,8 +226,8 @@
 }
 
 .bs-back-icon {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   transition:
     transform 0.3s ease,
     opacity 0.25s ease;
@@ -251,7 +255,7 @@
 .bs-back::before {
   position: absolute;
   bottom: -20px;
-  content: "Back";
+  content: "Close";
   color: var(--bg);
   font-size: 0;
   font-weight: 500;
@@ -486,9 +490,9 @@
 }
 
 .bs-stage.is-portrait .bs-back {
-  top: 16px;
-  left: auto;
-  right: 16px;
+  top: 10px;
+  width: 42px;
+  height: 42px;
 }
 
 /* Keep the hint on one line on a phone. */

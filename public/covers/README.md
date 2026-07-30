@@ -16,7 +16,7 @@ therefore harmless: the book still renders, just with a different cover.
 
 | File | Book | Status |
 | --- | --- | --- |
-| `autobiography-of-a-yogi.jpg` | Autobiography of a Yogi — the illustrated mandala edition, which is not on Open Library | **not committed yet** |
+| `autobiography-of-a-yogi.jpg` | Autobiography of a Yogi — the illustrated mandala edition, which is not on Open Library | committed, 625×1000 |
 
 Portrait JPEG, roughly 2:3, ≥600px wide. It is painted onto a 1024×1536 cover
 texture, so anything smaller will look soft.
