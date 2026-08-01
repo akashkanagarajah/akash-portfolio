@@ -78,6 +78,8 @@ interface EngineOptions {
   /** Fires when the fan is coming back and the stage word may show again. */
   onShelfVisible: () => void;
   onClosed: () => void;
+  /** The GPU dropped the context. The owner should rebuild on a fresh canvas. */
+  onContextLost: () => void;
 }
 
 interface Engine {
@@ -125,6 +127,25 @@ function mkCanvas(w: number, h: number) {
   const c = document.createElement("canvas");
   c.width = w;
   c.height = h;
+  return c;
+}
+
+/* Paints into a canvas of any size while the painter still draws against the
+   reference's coordinate system. Every painter below places type and rules at
+   hardcoded pixel offsets tuned for 1024×1536, so the texture cannot simply be
+   made smaller — the scale here is what lets a phone allocate a quarter of the
+   pixels and still get the identical artwork. */
+function paintScaled(
+  w: number,
+  h: number,
+  refW: number,
+  refH: number,
+  paint: (x: CanvasRenderingContext2D, w: number, h: number) => void,
+) {
+  const c = mkCanvas(w, h);
+  const x = c.getContext("2d")!;
+  x.scale(w / refW, h / refH);
+  paint(x, refW, refH);
   return c;
 }
 
@@ -314,15 +335,38 @@ function createShowcase(o: EngineOptions): Engine {
     return x;
   };
 
+  /* ---------- 0b. Device budget ----------
+     The reference is a desktop demo and sizes everything for a desktop GPU. On a
+     phone the same scene asks for well over 100MB of GPU memory (four books ×
+     two 1024×1536 cover textures + a 220×1536 spine, plus a 2048² shadow map,
+     4× MSAA and a 2× pixel ratio). Mobile Safari and Chrome answer that by
+     dropping the WebGL context, which is why the section went blank mid-scroll
+     rather than merely running slowly.
+
+     LOW_POWER is the single switch for that. It only ever lowers resolution and
+     draw counts; no slot, spring, camera or layout value changes with it, so the
+     composition is identical on both paths. */
+  const LOW_POWER = window.matchMedia("(pointer: coarse)").matches;
+
   /* ---------- 1. Renderer, scene, camera, lights (reference §1) ---------- */
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    /* MSAA is the single biggest per-pixel cost here and the books are large,
+       soft-edged shapes, so the aliasing it removes is barely visible. */
+    antialias: !LOW_POWER,
+    alpha: true,
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2));
   renderer.setSize(VW, VH, false);
   /* r185: outputEncoding/sRGBEncoding removed -> outputColorSpace. Same result. */
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.92;
-  renderer.shadowMap.enabled = true;
+  /* Real shadows are a whole extra depth pass over every mesh, every frame. The
+     books keep their contact shadow either way — that is the painted blob plane
+     under each one, not this — so dropping the pass on phones costs very little
+     and saves both the 2048² map and the second pass. */
+  renderer.shadowMap.enabled = !LOW_POWER;
   /* r185: PCFSoftShadowMap is deprecated and silently falls back to PCFShadowMap,
      so it is named explicitly. Shadow edges are a touch harder than the
      reference's; nothing else about the lighting changes. */
@@ -378,7 +422,7 @@ function createShowcase(o: EngineOptions): Engine {
   const key = new THREE.DirectionalLight(0xffffff, 0.82);
   key.position.set(3.5, 5, 6);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.set(LOW_POWER ? 1024 : 2048, LOW_POWER ? 1024 : 2048);
   key.shadow.camera.left = -4;
   key.shadow.camera.right = 4;
   key.shadow.camera.top = 4;
@@ -514,7 +558,11 @@ function createShowcase(o: EngineOptions): Engine {
     T = 0.34,
     CT = 0.032,
     OV = 0.05;
-  const PAGE_N = 12,
+  /* Loose page planes, fanned when a cover opens. Halved on phones: at 4 books
+     these are 72 of the scene's draw calls, and they are only ever visible in
+     the opened state where fewer leaves read the same. */
+  const PAGE_N = LOW_POWER ? 6 : 12,
+    PAGE_B = LOW_POWER ? 3 : 6,
     PW = W - 0.02,
     PH = H - 0.02;
   const BLOCK_D = 0.245,
@@ -598,12 +646,15 @@ function createShowcase(o: EngineOptions): Engine {
     root.add(float);
     bookRoot.add(root);
 
-    const fc = mkCanvas(1024, 1536);
-    paintPlaceholderCover(fc.getContext("2d")!, 1024, 1536, cfg);
-    const bc = mkCanvas(1024, 1536);
-    paintBack(bc.getContext("2d")!, 1024, 1536, cfg);
-    const sc = mkCanvas(220, 1536);
-    paintSpine(sc.getContext("2d")!, 220, 1536, cfg);
+    /* Half-resolution covers on phones: a quarter of the pixels each, which is
+       where most of the scene's GPU memory was going. paintScaled keeps the
+       artwork identical. */
+    const CW = LOW_POWER ? 512 : 1024,
+      CH = LOW_POWER ? 768 : 1536,
+      SW = LOW_POWER ? 110 : 220;
+    const fc = paintScaled(CW, CH, 1024, 1536, (x, w, h) => paintPlaceholderCover(x, w, h, cfg));
+    const bc = paintScaled(CW, CH, 1024, 1536, (x, w, h) => paintBack(x, w, h, cfg));
+    const sc = paintScaled(SW, CH, 220, 1536, (x, w, h) => paintSpine(x, w, h, cfg));
     const frontTex = tex(fc),
       backTex = tex(bc),
       spineTex = tex(sc);
@@ -647,9 +698,17 @@ function createShowcase(o: EngineOptions): Engine {
       const apply = (t: THREE.Texture) => {
         t.colorSpace = THREE.SRGBColorSpace;
         t.anisotropy = ANISO;
+        const stale = mFront.map;
         mFront.map = t;
         mFront.needsUpdate = true;
         track(t);
+        /* The painted placeholder is now unreachable. It used to stay resident
+           for the life of the page — four books' worth of dead 1024×1536
+           texture on top of the covers that replaced them. */
+        if (stale && stale !== t) {
+          disposables.delete(stale);
+          stale.dispose();
+        }
       };
       const give_up = () => console.warn("Cover unavailable, placeholder kept:", cfg.title);
       loader.load(cfg.coverURL, apply, undefined, () => {
@@ -707,7 +766,7 @@ function createShowcase(o: EngineOptions): Engine {
 
     const pagesB: THREE.Group[] = [];
     const pageFB: number[] = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < PAGE_B; i++) {
       const pp = new THREE.Group();
       pp.position.set(-W / 2 + 0.01, (Math.random() - 0.5) * 0.006, -0.166 + i * 0.0042);
       const pm = new THREE.Mesh(pageGeo, pageMats[i % 3]);
@@ -716,7 +775,7 @@ function createShowcase(o: EngineOptions): Engine {
       pp.add(pm);
       float.add(pp);
       pagesB.push(pp);
-      pageFB.push(0.3 * Math.pow(1 - i / 6, 2.6));
+      pageFB.push(0.3 * Math.pow(1 - i / PAGE_B, 2.6));
     }
 
     const blob = new THREE.Mesh(
@@ -1561,11 +1620,14 @@ function createShowcase(o: EngineOptions): Engine {
       const fl = idle * Math.sin(t * 1.15 + b.phase + i * 0.6) * 0.006 * (1 - i / PAGE_N);
       b.pages[i].rotation.y = -(ang * b.pageF[i] + Math.max(0, fl));
     }
-    for (let i = 0; i < 6; i++) b.pagesB[i].rotation.y = angB * b.pageFB[i];
+    for (let i = 0; i < PAGE_B; i++) b.pagesB[i].rotation.y = angB * b.pageFB[i];
   }
 
   let raf = 0;
+  let running = false;
   function animate() {
+    /* stop() can land between the schedule and the callback */
+    if (!running) return;
     raf = requestAnimationFrame(animate);
     timer.update();
     const dt = Math.min(timer.getDelta(), 0.05);
@@ -1657,15 +1719,73 @@ function createShowcase(o: EngineOptions): Engine {
   const ro = new ResizeObserver(relayout);
   ro.observe(stage);
 
-  animate();
+  /* ---------- 10. Run only while on screen ----------
+     The reference is a full-viewport app: its canvas is always the thing you
+     are looking at, so it renders unconditionally forever. Here it is one
+     section of a long page, and an unconditional loop means a phone keeps
+     running a full 3D frame — raycast, springs, shadow pass, draw — for every
+     other section too. That is what made scrolling stutter.
+
+     A small rootMargin starts the loop just before the section arrives, so the
+     entrance is already underway by the time it is in view. */
+  function start() {
+    if (running) return;
+    running = true;
+    /* Swallow the paused interval. Without this the first frame back sees a
+       delta covering the whole time off screen; dt is clamped in animate(), but
+       getElapsed() is not, and the idle float reads it directly. */
+    timer.update();
+    raf = requestAnimationFrame(animate);
+  }
+  function stop() {
+    running = false;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  let onScreen = false;
+  let pageVisible = !document.hidden;
+  const syncRunning = () => (onScreen && pageVisible ? start() : stop());
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      onScreen = entries[entries.length - 1].isIntersecting;
+      syncRunning();
+    },
+    { rootMargin: "300px 0px" },
+  );
+  io.observe(stage);
+
+  const onVisibility = () => {
+    pageVisible = !document.hidden;
+    syncRunning();
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+
+  /* ---------- 11. Context loss ----------
+     Phones drop the WebGL context under memory pressure or when the tab is
+     backgrounded. Without preventDefault the browser will not even try to
+     restore it, and the canvas stays blank for the life of the page — the
+     failure this section was showing on mobile. preventDefault asks for a
+     restore; the owner rebuilds on a fresh canvas, which is more reliable than
+     reviving the lost one. */
+  const onLost = (e: Event) => {
+    e.preventDefault();
+    stop();
+    o.onContextLost();
+  };
+  canvas.addEventListener("webglcontextlost", onLost);
 
   return {
     close,
     dispose() {
-      cancelAnimationFrame(raf);
+      stop();
       timers.forEach(clearTimeout);
       timer.disconnect();
       ro.disconnect();
+      io.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("contextmenu", onContextMenu);
       canvas.removeEventListener("pointerleave", onPointerLeave);
       canvas.removeEventListener("pointermove", onPointerMove);
@@ -1719,6 +1839,11 @@ export default function BookShowcase({
   const engineRef = useRef<Engine | null>(null);
   const [selected, setSelected] = useState<ShowcaseBook | null>(null);
   const [failed, setFailed] = useState(false);
+  /* Bumped when the GPU drops the context. It keys the canvas as well as this
+     effect, so the rebuild gets a brand new canvas element — reviving a lost
+     context in place is unreliable across mobile browsers. */
+  const [glGeneration, setGlGeneration] = useState(0);
+  const lossCount = useRef(0);
 
   useEffect(() => {
     const stage = stageRef.current,
@@ -1748,6 +1873,19 @@ export default function BookShowcase({
              word any more, so nothing to do — the engine still calls it. */
           onShelfVisible: () => {},
           onClosed: () => setSelected(null),
+          onContextLost: () => {
+            /* One rebuild is worth trying — a context dropped while backgrounded
+               comes back fine. Repeated losses mean the device cannot hold this
+               scene, and retrying forever would spin. Show the fallback. */
+            lossCount.current += 1;
+            if (lossCount.current > 2) {
+              console.error("BookShowcase: WebGL context lost repeatedly, giving up");
+              setFailed(true);
+              return;
+            }
+            setSelected(null);
+            setGlGeneration((g) => g + 1);
+          },
         });
       } catch (err) {
         console.error("BookShowcase: WebGL init failed", err);
@@ -1760,7 +1898,7 @@ export default function BookShowcase({
       engineRef.current?.dispose();
       engineRef.current = null;
     };
-  }, [books]);
+  }, [books, glGeneration]);
 
   return (
     <div
@@ -1769,7 +1907,7 @@ export default function BookShowcase({
       role="group"
       aria-label={ariaLabel}
     >
-      <canvas ref={canvasRef} className="bs-canvas" />
+      <canvas key={glGeneration} ref={canvasRef} className="bs-canvas" />
 
       {overlay && <div className="bs-overlay">{overlay}</div>}
 
