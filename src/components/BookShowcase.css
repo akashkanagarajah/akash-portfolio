@@ -100,7 +100,15 @@
   display: block;
   width: 100%;
   height: 100%;
-  touch-action: none;
+  /* The reference is a full-viewport app with nothing to scroll, so it takes
+     every gesture with touch-action: none. Here the stage is full-bleed and
+     taller than half a phone screen, which made it a scroll trap: a vertical
+     swipe anywhere over the books was swallowed instead of scrolling the page.
+     pan-y hands vertical gestures back to the page and keeps horizontal ones,
+     which is what drag-to-rotate actually reads. The browser fires
+     pointercancel when it takes a gesture over, and cancelPointer already
+     handles that. */
+  touch-action: pan-y;
 }
 
 .bs-stage button {

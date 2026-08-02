@@ -1292,9 +1292,16 @@ function createShowcase(o: EngineOptions): Engine {
       o.onShelfVisible();
       applyMode();
       camTo("hero");
+      /* bringBack holds each book parked below the frame for `delay` seconds
+         before flying it up. The reference's 0.85 reads as a beat on a desktop
+         that finishes the whole close in ~2s; on a phone the same wait is most
+         of a second of blank shelf after the panel has already gone, which
+         reads as the section having hung. Phones get a shorter hold. */
+      const hold = LOW_POWER ? 0.28 : 0.85;
+      const stagger = LOW_POWER ? 0.07 : 0.1;
       let back = 0;
       books.forEach((bk, i) => {
-        if (bk !== b) bringBack(bk, i, 0.85 + back++ * 0.1);
+        if (bk !== b) bringBack(bk, i, hold + back++ * stagger);
       });
     }, 250);
     later(() => {
@@ -1302,6 +1309,18 @@ function createShowcase(o: EngineOptions): Engine {
         state.mode = "hero";
         state.selected = null;
         o.onClosed();
+      }
+      /* Safety net. Every book is hidden by sendOut's final segment, and only
+         bringBack's track makes it visible again. If the loop was paused
+         part-way through a close — the section scrolled off, the tab
+         backgrounded — a book can be left parked off-frame and invisible with
+         no track left to run. Re-assert the hero layout so the shelf is never
+         left empty. */
+      if (state.mode === "hero") {
+        books.forEach((bk, i) => {
+          bk.root.visible = true;
+          if (!bk.exit) setTargets(bk, SLOTS.hero[i]);
+        });
       }
     }, 1600);
   }
@@ -1623,6 +1642,34 @@ function createShowcase(o: EngineOptions): Engine {
     for (let i = 0; i < PAGE_B; i++) b.pagesB[i].rotation.y = angB * b.pageFB[i];
   }
 
+  /* Springs here are explicit Euler, so a large dt makes them diverge. The
+     reference guards that by clamping dt to 0.05, which on a fast machine is
+     invisible — but it means anything below 20fps runs the entire scene in slow
+     motion. A phone at 10fps advances half a second of animation per second of
+     wall time, so the close sequence's "books fly back" beat, timed at ~2s,
+     stretches to four or more, and the shelf reads as hung and empty.
+
+     Stepping the simulation in clamped substeps keeps it in real time without
+     giving up the stability the clamp buys: the physics still never sees a step
+     larger than 0.05, the frame just runs as many of them as the elapsed time
+     needs. Capped so a long stall (GC pause, backgrounded tab) fast-forwards a
+     bounded amount rather than locking up catching up. */
+  const MAX_STEP = 0.05;
+  const MAX_SUBSTEPS = 5;
+
+  function step(dt: number, t: number) {
+    books.forEach((b) => tickBook(b, dt, t));
+    leaves.update(dt, t);
+
+    parX.t = RM ? 0 : ptr.ndcX * 0.02;
+    parY.t = RM ? 0 : -ptr.ndcY * 0.012;
+    bookRoot.rotation.y = parX.update(dt);
+    bookRoot.rotation.x = parY.update(dt);
+
+    camera.position.set(camX.update(dt), camY.update(dt), camZ.update(dt));
+    camera.lookAt(lookX.update(dt), lookY.update(dt), 0);
+  }
+
   let raf = 0;
   let running = false;
   function animate() {
@@ -1630,7 +1677,7 @@ function createShowcase(o: EngineOptions): Engine {
     if (!running) return;
     raf = requestAnimationFrame(animate);
     timer.update();
-    const dt = Math.min(timer.getDelta(), 0.05);
+    const frame = Math.min(timer.getDelta(), MAX_STEP * MAX_SUBSTEPS);
     const t = timer.getElapsed();
 
     if (ptr.seen && (ptr.type === "mouse" || ptr.down)) castRay();
@@ -1650,16 +1697,14 @@ function createShowcase(o: EngineOptions): Engine {
     canvas.style.cursor = cur;
 
     books.forEach((b) => screenPos(b));
-    books.forEach((b) => tickBook(b, dt, t));
-    leaves.update(dt, t);
 
-    parX.t = RM ? 0 : ptr.ndcX * 0.02;
-    parY.t = RM ? 0 : -ptr.ndcY * 0.012;
-    bookRoot.rotation.y = parX.update(dt);
-    bookRoot.rotation.x = parY.update(dt);
-
-    camera.position.set(camX.update(dt), camY.update(dt), camZ.update(dt));
-    camera.lookAt(lookX.update(dt), lookY.update(dt), 0);
+    let remaining = frame;
+    let dt = 0;
+    do {
+      dt = Math.min(remaining, MAX_STEP);
+      remaining -= dt;
+      step(dt, t);
+    } while (remaining > 1e-4);
 
     if (
       state.mode === "hero" &&
