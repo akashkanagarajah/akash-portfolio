@@ -356,7 +356,11 @@ function createShowcase(o: EngineOptions): Engine {
     antialias: !LOW_POWER,
     alpha: true,
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1.5 : 2));
+  /* 1 on phones, not 1.5. A modern handset reports 2.5-3x, so even the capped
+     1.5 was shading well over twice as many fragments as the panel actually
+     resolves for a scene of large, soft, mostly-textured shapes. This is the
+     single biggest per-frame cost left after MSAA and shadows. */
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, LOW_POWER ? 1 : 2));
   renderer.setSize(VW, VH, false);
   /* r185: outputEncoding/sRGBEncoding removed -> outputColorSpace. Same result. */
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1003,7 +1007,11 @@ function createShowcase(o: EngineOptions): Engine {
 
   function computeSlots() {
     const a = VW / Math.max(1, VH);
-    const portrait = a < 0.85;
+    /* Width decides this as much as aspect does. Keying on aspect alone let a
+       narrow stage that happened to be tall enough fall into the landscape
+       composition, which spaces the fan for a wide screen and puts the opened
+       book far off to the left — off-frame entirely on a phone. */
+    const portrait = a < 0.85 || VW < 700;
     SLOTS.portrait = portrait;
     stage.classList.toggle("is-portrait", portrait);
 
@@ -1788,24 +1796,56 @@ function createShowcase(o: EngineOptions): Engine {
     raf = 0;
   }
 
-  let onScreen = false;
-  let pageVisible = !document.hidden;
-  const syncRunning = () => (onScreen && pageVisible ? start() : stop());
+  /* Whether to run is answered by measuring the stage, not by trusting an
+     IntersectionObserver entry. The first version of this gate kept a boolean
+     that only an observer callback could ever set true, so anything that stopped
+     that callback arriving — and on some mobile browsers it does not arrive as
+     expected — left the loop stopped forever. The section then looked completely
+     blank while still appearing interactive, because the open/close timers are
+     wall-clock and keep driving the panel and buttons with nothing rendering
+     behind them.
 
-  const io = new IntersectionObserver(
-    (entries) => {
-      onScreen = entries[entries.length - 1].isIntersecting;
+     A direct rect test cannot get stuck: the observer and the scroll listener
+     below only ask the question again, they never own the answer. */
+  const MARGIN = 300;
+  const isOnScreen = () => {
+    const r = stage.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+    const vw = window.innerWidth || document.documentElement.clientWidth || 0;
+    return r.bottom > -MARGIN && r.top < vh + MARGIN && r.right > 0 && r.left < vw;
+  };
+
+  let pageVisible = !document.hidden;
+  const syncRunning = () => (pageVisible && isOnScreen() ? start() : stop());
+
+  /* Coalesce to one rect read per frame — scroll fires far more often than that. */
+  let syncQueued = false;
+  const queueSync = () => {
+    if (syncQueued) return;
+    syncQueued = true;
+    requestAnimationFrame(() => {
+      syncQueued = false;
       syncRunning();
-    },
-    { rootMargin: "300px 0px" },
-  );
-  io.observe(stage);
+    });
+  };
+
+  const io =
+    typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(queueSync, { rootMargin: `${MARGIN}px 0px` })
+      : null;
+  io?.observe(stage);
+
+  window.addEventListener("scroll", queueSync, { passive: true });
+  window.addEventListener("resize", queueSync, { passive: true });
 
   const onVisibility = () => {
     pageVisible = !document.hidden;
     syncRunning();
   };
   document.addEventListener("visibilitychange", onVisibility);
+
+  /* Decide once up front rather than waiting for a callback that may not come. */
+  syncRunning();
 
   /* ---------- 11. Context loss ----------
      Phones drop the WebGL context under memory pressure or when the tab is
@@ -1828,7 +1868,9 @@ function createShowcase(o: EngineOptions): Engine {
       timers.forEach(clearTimeout);
       timer.disconnect();
       ro.disconnect();
-      io.disconnect();
+      io?.disconnect();
+      window.removeEventListener("scroll", queueSync);
+      window.removeEventListener("resize", queueSync);
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("webglcontextlost", onLost);
       canvas.removeEventListener("contextmenu", onContextMenu);

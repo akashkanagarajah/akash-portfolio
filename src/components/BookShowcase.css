@@ -510,6 +510,75 @@
   white-space: nowrap;
 }
 
+/* The rules above are driven by .is-portrait, which the engine sets from the
+   stage's measured aspect. That measurement can disagree with what the user is
+   actually holding — it did on at least one Android browser, which laid the
+   detail panel out in its desktop position on a phone. Width is the thing that
+   really decides this layout, so the same rules are restated against a plain
+   media query. Whichever path is right, the phone layout wins. */
+@media (max-width: 700px) {
+  .bs-stage {
+    height: clamp(500px, 64vh, 600px);
+  }
+
+  .bs-stage .bs-dp {
+    right: auto;
+    left: 50%;
+    top: auto;
+    bottom: 3.5%;
+    transform: translate3d(-50%, 0, 0);
+    width: min(520px, 92%);
+  }
+
+  .bs-stage .bs-dp-title {
+    font-size: clamp(24px, 7vw, 34px);
+  }
+
+  /* Three lines, not four: PANEL_FRAC reserves the bottom of the stage for this
+     panel, and a fourth line pushes its top edge up into the opened book. */
+  .bs-stage .bs-dp-desc {
+    font-size: 14px;
+    margin-top: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .bs-stage .bs-dp-meta {
+    margin-top: 16px;
+  }
+
+  .bs-stage .bs-dp-rule {
+    margin-top: 14px;
+  }
+
+  .bs-stage .bs-dp-actions {
+    margin-top: 16px;
+    flex-wrap: wrap;
+    border-radius: 28px;
+  }
+
+  .bs-stage .bs-action {
+    height: 44px;
+    padding: 0 18px;
+    font-size: 14px;
+  }
+
+  .bs-stage .bs-back {
+    top: 10px;
+    width: 42px;
+    height: 42px;
+  }
+
+  /* Keep the hint on one line on a phone. */
+  .bs-stage .bs-hint {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+}
+
 .bs-fail {
   position: absolute;
   inset: 0;
