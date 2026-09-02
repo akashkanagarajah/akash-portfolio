@@ -2,6 +2,7 @@
   --bg: #0c0c0c;
   --bg-card: #141414;
   --bg-card-hover: #1d1d1d;
+  --bg-card-featured: #17150f;
   --text: #f0ede8;
   --text-muted: #8a8278;
   --accent: #C9A84C;
@@ -22,6 +23,7 @@
   --bg: #FAF5E4;
   --bg-card: #F2E9CC;
   --bg-card-hover: #EADDB5;
+  --bg-card-featured: #F4E9C4;
   --text: #1a1409;
   --text-muted: #7a6840;
   --accent: #9A7020;
@@ -1103,15 +1105,14 @@ section { padding: 7rem 8% 5rem; position: relative; }
   gap: 0.6rem;
   flex: 1;
 }
-/* Featured project (PartyNI): wide + centred at the foot of the grid. Driven by
-   the `featured` flag on the PROJECTS entry, not by child count — the old
-   `:last-child:nth-child(odd)` rule stopped matching the moment a sixth project
-   was added, silently dropping the treatment. */
+/* Featured project (PartyNI): emphasised inside its own grid cell, not promoted to
+   a full-width row. The full-width treatment only tiles cleanly when the number of
+   ordinary cards above it is even, so a sixth project left a half-empty row. A gold
+   border reads as featured at any project count and survives the 1-col mobile grid
+   untouched. Driven by the `featured` flag on the PROJECTS entry. */
 .project-card--featured {
-  grid-column: 1 / -1;
-  max-width: 560px;
-  margin: 0 auto;
-  width: 100%;
+  border-color: var(--accent-border-hover);
+  box-shadow: 0 10px 34px -18px var(--accent-subtle);
 }
 .psc-date {
   font-size: 0.72rem;
@@ -1283,7 +1284,6 @@ footer {
 
   /* Projects */
   .projects-grid { grid-template-columns: 1fr; }
-  .project-card--featured { max-width: 100%; }
 
   /* Courses */
   .course-grid { grid-template-columns: 1fr; }

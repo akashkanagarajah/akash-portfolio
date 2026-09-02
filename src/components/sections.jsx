@@ -801,9 +801,20 @@ export function EducationSection() {
 /* ---------- Section 5: Projects ---------- */
 const PROJECTS = [
   {
-    title: 'Doorwatch \u2014 Self-Hosted Home Security',
-    dates: 'Aug 2026 \u2013 Present',
-    desc: "Self-hosted home security that pings your phone instead of making you scrub footage. Reolink cameras feed Frigate for local person detection \u2014 no cloud, no subscription \u2014 and a Telegram bot sends the photo the second someone's at the door. Zone tuning killed the false positives; face recognition was built, then deliberately cut.",
+    title: 'PartyNI — Event Vendor Marketplace',
+    dates: '2024 – Present · Co-Founder',
+    desc: 'Co-founding PartyNI — a marketplace that connects customers with event vendors, handling everything from discovery and booking to secure payments and communication in one place.',
+    tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
+    // Featured: gold border rather than a full-width row. A full-width card needs an
+    // even number of ordinary cards above it or it leaves a half-empty row, so it
+    // broke the moment a sixth project landed. In-cell emphasis keeps the two-column
+    // grid whole at any project count.
+    featured: true,
+  },
+  {
+    title: 'Doorwatch — Self-Hosted Home Security',
+    dates: 'Aug 2026 – Present',
+    desc: "Self-hosted home security that pings your phone instead of making you scrub footage. Reolink cameras feed Frigate for local person detection — no cloud, no subscription — and a Telegram bot sends the photo the second someone's at the door. Face recognition was built, then cut.",
     tags: ['Frigate', 'Telegram Bot API', 'Docker', 'Computer Vision'],
   },
   {
@@ -830,16 +841,6 @@ const PROJECTS = [
     desc: 'Python diagnostic tool at OPG Pickering NGS to validate DES serial data packet integrity, parsing hexadecimal sequence numbers to detect corruption and transmission errors in SCADA data streams from operating reactor units.',
     tags: ['Python', 'SCADA', 'Serial Comms', 'Data Validation'],
   },
-  {
-    title: 'PartyNI — Event Vendor Marketplace',
-    dates: '2024 – Present · Co-Founder',
-    desc: 'Co-founding PartyNI — a marketplace that connects customers with event vendors, handling everything from discovery and booking to secure payments and communication in one place.',
-    tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
-    // Featured slot: rendered wide + centred at the foot of the grid. Was implicit
-    // via a `:last-child:nth-child(odd)` CSS rule, which silently stopped applying
-    // once the project count went even. Now explicit so the count can't break it.
-    featured: true,
-  },
 ]
 
 function ProjectCard({ p }) {
@@ -851,7 +852,7 @@ function ProjectCard({ p }) {
       glowRadius={35}
       glowIntensity={0.8}
       animated={false}
-      backgroundColor="var(--bg-card)"
+      backgroundColor={p.featured ? 'var(--bg-card-featured)' : 'var(--bg-card)'}
       className={`project-card${p.featured ? ' project-card--featured' : ''}`}
     >
       <span className="psc-date">{p.dates}</span>
