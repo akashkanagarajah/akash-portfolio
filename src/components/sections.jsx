@@ -801,6 +801,12 @@ export function EducationSection() {
 /* ---------- Section 5: Projects ---------- */
 const PROJECTS = [
   {
+    title: 'Doorwatch \u2014 Self-Hosted Home Security',
+    dates: 'Aug 2026 \u2013 Present',
+    desc: "Self-hosted home security that pings your phone instead of making you scrub footage. Reolink cameras feed Frigate for local person detection \u2014 no cloud, no subscription \u2014 and a Telegram bot sends the photo the second someone's at the door. Zone tuning killed the false positives; face recognition was built, then deliberately cut.",
+    tags: ['Frigate', 'Telegram Bot API', 'Docker', 'Computer Vision'],
+  },
+  {
     title: 'RISC CPU on FPGA',
     dates: '2024',
     desc: 'A custom RISC processor synthesized on FPGA — full instruction fetch, decode, execute and memory stages. Designed the ISA, datapath and control logic from the ground up.',
@@ -829,6 +835,10 @@ const PROJECTS = [
     dates: '2024 – Present · Co-Founder',
     desc: 'Co-founding PartyNI — a marketplace that connects customers with event vendors, handling everything from discovery and booking to secure payments and communication in one place.',
     tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
+    // Featured slot: rendered wide + centred at the foot of the grid. Was implicit
+    // via a `:last-child:nth-child(odd)` CSS rule, which silently stopped applying
+    // once the project count went even. Now explicit so the count can't break it.
+    featured: true,
   },
 ]
 
@@ -842,7 +852,7 @@ function ProjectCard({ p }) {
       glowIntensity={0.8}
       animated={false}
       backgroundColor="var(--bg-card)"
-      className="project-card"
+      className={`project-card${p.featured ? ' project-card--featured' : ''}`}
     >
       <span className="psc-date">{p.dates}</span>
       <h3 className="psc-title">{p.title}</h3>
