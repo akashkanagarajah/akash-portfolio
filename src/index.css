@@ -1103,7 +1103,11 @@ section { padding: 7rem 8% 5rem; position: relative; }
   gap: 0.6rem;
   flex: 1;
 }
-.project-card:last-child:nth-child(odd) {
+/* Featured project (PartyNI): wide + centred at the foot of the grid. Driven by
+   the `featured` flag on the PROJECTS entry, not by child count — the old
+   `:last-child:nth-child(odd)` rule stopped matching the moment a sixth project
+   was added, silently dropping the treatment. */
+.project-card--featured {
   grid-column: 1 / -1;
   max-width: 560px;
   margin: 0 auto;
@@ -1279,7 +1283,7 @@ footer {
 
   /* Projects */
   .projects-grid { grid-template-columns: 1fr; }
-  .project-card:last-child:nth-child(odd) { max-width: 100%; }
+  .project-card--featured { max-width: 100%; }
 
   /* Courses */
   .course-grid { grid-template-columns: 1fr; }
