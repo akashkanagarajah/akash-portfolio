@@ -18,6 +18,10 @@
   --tag-border: rgba(201,168,76,0.22);
   --stripe: rgba(255,255,255,0.04);
   --stripe-2: rgba(255,255,255,0.015);
+  --reactor-cold: #6b7c8c;
+  --reactor-cold-opacity: 0.18;
+  --reactor-glow-opacity: 0.1;
+  --readout-off: rgba(255,255,255,0.08);
 }
 :root[data-theme="light"] {
   --bg: #FAF5E4;
@@ -39,6 +43,10 @@
   --tag-border: rgba(154,112,32,0.22);
   --stripe: rgba(0,0,0,0.05);
   --stripe-2: rgba(0,0,0,0.02);
+  --reactor-cold: #6f7780;
+  --reactor-cold-opacity: 0.2;
+  --reactor-glow-opacity: 0.08;
+  --readout-off: rgba(0,0,0,0.09);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -232,6 +240,174 @@ section { padding: 7rem 8% 5rem; position: relative; }
   color: var(--text-muted);
   text-transform: uppercase;
   font-weight: 400;
+}
+
+/* Hero power readout — instrument strip under the interests */
+.hero-readout {
+  display: flex;
+  align-items: center;
+  gap: 0.95rem;
+  margin-top: 2.4rem;
+  max-width: 330px;
+}
+.hero-readout__dial {
+  width: 38px;
+  height: 24px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+.hero-readout__arc,
+.hero-readout__tick {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.hero-readout__needle {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  transform-origin: 18px 19px;
+  transform: rotate(calc(var(--level) * 180deg));
+  transition: transform 0.35s ease-out;
+}
+.hero-readout__hub { fill: var(--accent); }
+.hero-readout__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.hero-readout__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.hero-readout__label,
+.hero-readout__status {
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.hero-readout__value {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.hero-readout__value small {
+  font-size: 0.6rem;
+  margin-left: 0.15em;
+  color: var(--text-muted);
+}
+.hero-readout__bar {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  height: 7px;
+}
+.hero-readout__seg {
+  border-radius: 1px;
+  background: var(--readout-off);
+  transition: background 0.25s, box-shadow 0.25s;
+}
+.hero-readout__seg.is-on {
+  background: var(--accent);
+  box-shadow: 0 0 5px var(--accent-border-hover);
+}
+.hero-readout__status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hero-readout__led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.45;
+}
+.hero-readout[data-status="self-test"] .hero-readout__led { opacity: 1; animation: readout-blink 0.2s steps(1) infinite; }
+.hero-readout[data-status="ramping"] .hero-readout__led { opacity: 1; animation: readout-breathe 1.6s ease-in-out infinite; }
+.hero-readout[data-status="online"] .hero-readout__led {
+  opacity: 1;
+  background: var(--accent-2);
+  box-shadow: 0 0 6px var(--accent-2);
+}
+@keyframes readout-blink { 50% { opacity: 0.15; } }
+@keyframes readout-breathe { 50% { opacity: 0.4; } }
+
+/* ───────── HERO — power-up on load ─────────
+   The hero is the system coming out of standby: text wakes from dim, the gold
+   elements flicker up like indicator lamps, the photo bezel energises and the
+   readout runs its lamp test. Every animation fills `backwards` only and ends
+   on the element's own style, so once it finishes (~1.3s) nothing lingers and
+   hover styles work untouched. */
+.hero-label,
+.hero-greet,
+.hero-interests li,
+.hero-hint { animation: hero-wake 0.6s ease-out 0.1s backwards; }
+.hero-readout { animation: hero-wake 0.5s ease-out 0.2s backwards; }
+.hero-name { animation: hero-lamp 1s linear 0.15s backwards; }
+.hero-interests li::before { animation: hero-tick 0.35s ease-out backwards; }
+.hero-interests li:nth-child(1)::before { animation-delay: 0.45s; }
+.hero-interests li:nth-child(2)::before { animation-delay: 0.55s; }
+.hero-interests li:nth-child(3)::before { animation-delay: 0.65s; }
+.hero-photo-frame { animation: hero-bezel 1.05s linear 0.25s backwards; }
+.hero-pixel { animation: hero-screen 0.9s ease-out 0.35s backwards; }
+.hero-readout__seg { animation: readout-lamp 0.42s ease-out calc(0.3s + var(--i) * 22ms); }
+.hero-readout__needle { animation: readout-needle-test 0.9s ease-in-out 0.3s; }
+
+@keyframes hero-wake { from { opacity: 0.3; } }
+@keyframes hero-lamp {
+  0%, 14% { opacity: 0.1; filter: saturate(0.2) brightness(0.7) drop-shadow(0 0 0 rgba(201,168,76,0)); }
+  18%  { opacity: 0.8; }
+  23%  { opacity: 0.15; }
+  33%  { opacity: 0.95; }
+  38%  { opacity: 0.4; }
+  55%  { opacity: 1; filter: saturate(1) brightness(1.2) drop-shadow(0 0 14px rgba(201,168,76,0.45)); }
+  100% { opacity: 1; filter: saturate(1) brightness(1) drop-shadow(0 0 0 rgba(201,168,76,0)); }
+}
+@keyframes hero-tick { from { opacity: 0; width: 0; } }
+@keyframes hero-bezel {
+  0%, 20% {
+    border-color: var(--border);
+    box-shadow: 0 0 0 1px transparent, 0 20px 60px rgba(0,0,0,0.5), 0 0 0 rgba(201,168,76,0);
+  }
+  26% {
+    border-color: var(--accent-border-hover);
+    box-shadow: 0 0 0 1px var(--accent-border), 0 20px 60px rgba(0,0,0,0.5), 0 0 70px rgba(201,168,76,0.22);
+  }
+  32% {
+    border-color: var(--border);
+    box-shadow: 0 0 0 1px transparent, 0 20px 60px rgba(0,0,0,0.5), 0 0 0 rgba(201,168,76,0);
+  }
+  50% {
+    border-color: var(--accent-border-hover);
+    box-shadow: 0 0 0 1px var(--accent-border), 0 20px 60px rgba(0,0,0,0.5), 0 0 90px rgba(201,168,76,0.26);
+  }
+}
+@keyframes hero-screen { from { filter: brightness(0.35) saturate(0.5); } }
+@keyframes readout-lamp {
+  35% { background: var(--accent); box-shadow: 0 0 6px var(--accent-border-hover); }
+}
+@keyframes readout-needle-test { 45% { transform: rotate(180deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-label,
+  .hero-greet,
+  .hero-name,
+  .hero-interests li,
+  .hero-interests li::before,
+  .hero-hint,
+  .hero-photo-frame,
+  .hero-pixel,
+  .hero-readout,
+  .hero-readout * { animation: none !important; transition: none !important; }
 }
 
 /* ───────── placeholder images ───────── */

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { useMotionValueEvent } from 'motion/react'
 import {
   BorderGlow,
   ScrollReveal,
@@ -16,6 +17,7 @@ import {
 } from '../constants/imageAssets'
 import { READING_LIST } from '../constants/readingList'
 import { CONTACT_EMAIL, copyContactEmailToClipboard } from '../lib/copyEmailConfetti'
+import { usePowerProgress } from '../hooks/usePowerProgress'
 
 const SOCIAL_LINKEDIN = 'https://www.linkedin.com/in/akash-k-617498178/'
 const SOCIAL_X = 'https://x.com/akash_21_'
@@ -78,6 +80,68 @@ export function Dock({ theme, setTheme }) {
 }
 
 /* ---------- Section 1: Hero ---------- */
+
+/* Instrument strip under the interests: a small gauge + segmented bar reading
+   live page power (scroll progress). On load it runs a lamp test — every
+   segment lit and the needle swung to full scale — then settles to the real
+   level, as panel indicators do at start-up. Decorative, so hidden from AT. */
+const READOUT_SEGMENTS = 24
+const READOUT_BOOT_MS = 1300
+const READOUT_TICKS = [0, 45, 90, 135, 180].map((deg) => {
+  const a = Math.PI + (deg / 180) * Math.PI
+  return { x1: 18 + 11 * Math.cos(a), y1: 19 + 11 * Math.sin(a), x2: 18 + 14 * Math.cos(a), y2: 19 + 14 * Math.sin(a) }
+})
+
+function PowerReadout() {
+  const { progress, reducedMotion } = usePowerProgress()
+  const [level, setLevel] = useState(() => Math.round(progress.get() * 100))
+  const [booted, setBooted] = useState(false)
+
+  useMotionValueEvent(progress, 'change', (v) => setLevel(Math.round(v * 100)))
+  useEffect(() => {
+    if (reducedMotion) {
+      setBooted(true)
+      return
+    }
+    const id = setTimeout(() => setBooted(true), READOUT_BOOT_MS)
+    return () => clearTimeout(id)
+  }, [reducedMotion])
+
+  const lit = Math.round((level / 100) * READOUT_SEGMENTS)
+  const status = !booted ? 'Self-test' : level < 1 ? 'Standby' : level < 99 ? 'Ramping' : 'Online'
+
+  return (
+    <div className="hero-readout" data-status={status.toLowerCase()} style={{ '--level': level / 100 }} aria-hidden="true">
+      <svg className="hero-readout__dial" viewBox="0 0 36 22">
+        <path className="hero-readout__arc" d="M4 19 A14 14 0 0 1 32 19" />
+        {READOUT_TICKS.map((t, i) => (
+          <line key={i} className="hero-readout__tick" x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />
+        ))}
+        <line className="hero-readout__needle" x1="18" y1="19" x2="7" y2="19" />
+        <circle className="hero-readout__hub" cx="18" cy="19" r="1.7" />
+      </svg>
+      <div className="hero-readout__body">
+        <div className="hero-readout__head">
+          <span className="hero-readout__label">Core power</span>
+          <span className="hero-readout__value">
+            {String(level).padStart(3, '0')}
+            <small>%</small>
+          </span>
+        </div>
+        <div className="hero-readout__bar">
+          {Array.from({ length: READOUT_SEGMENTS }, (_, i) => (
+            <span key={i} className={`hero-readout__seg${i < lit ? ' is-on' : ''}`} style={{ '--i': i }} />
+          ))}
+        </div>
+        <div className="hero-readout__status">
+          <span className="hero-readout__led" />
+          {status}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function Hero() {
   return (
     <section className="hero" id="home">
@@ -101,6 +165,7 @@ export function Hero() {
           <li>Gym &amp; Sport</li>
           <li>Building Things</li>
         </ul>
+        <PowerReadout />
       </div>
 
       <div className="hero-right">
