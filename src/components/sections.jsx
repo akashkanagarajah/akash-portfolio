@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion, useMotionValueEvent, useTransform } from 'motion/react'
 import {
   BorderGlow,
@@ -20,6 +20,7 @@ import { CONTACT_EMAIL, copyContactEmailToClipboard } from '../lib/copyEmailConf
 import {
   usePowerProgress,
   useSectionPower,
+  mapSectionProgress,
   useElementPower,
   usePowerSwitch,
   usePowerSteps,
@@ -702,10 +703,11 @@ export function ReadingSection() {
 }
 
 /* ---------- Stage plates (career / education) ----------
-   Each entry carries a rated power level for its stage of the arc, peaking at
-   OPG (nuclear I&C). As the entry scrolls in its meter charges up to that level
-   and the card's glow scales with it, so the escalation reads by intensity
-   rather than by list position. Layered over the entry; content is untouched. */
+   Each entry has a rated power level. As it scrolls in, its meter charges up to
+   that level and the card's glow scales with it. Career derives the levels from
+   scroll position (see useRampLevels), so they rise down the chronological list
+   and peak at the final role, OPG. Education keeps fixed low levels — a quieter
+   beat after that peak. Layered over the entry; content is untouched. */
 const STAGE_ICONS = {
   // Nuclear / SCADA: an abstract core — nucleus with three orbits.
   core: (
@@ -760,25 +762,54 @@ function StagePlate({ stage, charge, on, peak }) {
   )
 }
 
+// An entry is fully charged once its centre reaches this fraction of the viewport.
+const STAGE_FULL_LINE = 0.55
+
 /* Power wiring shared by career and education entries. */
 function useStagePower(level = 1) {
   const ref = useRef(null)
-  const power = useElementPower(ref, { offset: ['start end', 'center 55%'] })
+  const power = useElementPower(ref, { offset: ['start end', `center ${STAGE_FULL_LINE * 100}%`] })
   const charge = useTransform(power, [0, 1], [0, level])
   const on = usePowerSwitch(power, 0.2)
   const peak = usePowerSwitch(power, 0.98)
   return { ref, charge, on, peak }
 }
 
-const stageAttrs = ({ on, peak }, stage) => ({
+const stageAttrs = ({ on, peak }, level) => ({
   'data-power': on ? 'on' : 'off',
-  'data-peak': peak && stage?.level === 1 ? 'true' : undefined,
-  style: { '--stage-level': stage?.level ?? 0.4 },
+  'data-peak': peak && level >= 1 ? 'true' : undefined,
+  style: { '--stage-level': level },
 })
 
+/* Career's power ramp: each entry is rated by the Career section's own power
+   (enter → exit) at the scroll position where that entry finishes charging,
+   normalised so the last entry reads 1. Later entries sit further down the
+   ramp, so ratings rise through the list and the final role is the peak.
+   Re-derived whenever the landmarks re-measure (resize, layout shifts). */
+function useRampLevels(listRef, sectionId) {
+  const { landmarks } = usePowerProgress()
+  const [levels, setLevels] = useState([])
+  useLayoutEffect(() => {
+    const list = listRef.current
+    const landmark = landmarks[sectionId]
+    if (!list || !landmark) return
+    const vh = window.innerHeight
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - vh)
+    const ramp = [...list.children].map((el) => {
+      const r = el.getBoundingClientRect()
+      const chargedAt = (r.top + window.scrollY + r.height / 2 - vh * STAGE_FULL_LINE) / maxScroll
+      return mapSectionProgress(landmark, chargedAt, 'enter', 'exit')
+    })
+    const peak = ramp[ramp.length - 1] || 1
+    const next = ramp.map((v) => Math.round(Math.min(1, Math.max(0.05, v / peak)) * 100) / 100)
+    setLevels((prev) => (prev.join() === next.join() ? prev : next))
+  }, [landmarks, sectionId, listRef])
+  return levels
+}
+
 /* ---------- Resume entry (career / education) ---------- */
-function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, children }) {
-  const power = useStagePower(stage?.level)
+function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, level = 0.5, children }) {
+  const power = useStagePower(level)
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -790,7 +821,7 @@ function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, ch
       backgroundColor="var(--bg-card)"
       className="resume-entry"
       elementRef={power.ref}
-      {...stageAttrs(power, stage)}
+      {...stageAttrs(power, level)}
     >
       {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
       <div className="resume-row">
@@ -819,8 +850,12 @@ function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, ch
   )
 }
 
-/* ---------- Section 3: Career ---------- */
+/* ---------- Section 3: Career ----------
+   Chronological, oldest first, so the power ramp escalates as you scroll and
+   peaks on the nuclear role at the bottom of the section. */
 export function CareerSection() {
+  const listRef = useRef(null)
+  const levels = useRampLevels(listRef, 'resume')
   return (
     <section className="resume-section" id="resume">
       <div className="resume-grid">
@@ -837,25 +872,13 @@ export function CareerSection() {
             From control rooms to production floors
           </ScrollReveal>
 
-          <div className="resume-entries">
-            <ResumeEntry
-              title="Control Computers Intern — Professional Engineering Year"
-              company="Ontario Power Generation · Pickering NGS"
-              dates="May 2022 – Apr 2023"
-              stage={{ cue: 'core', label: 'Nuclear I&C', level: 1, peakStatus: 'At power' }}
-              tags={['Python', 'SCADA', 'DCC/PACE', 'Serial Comms']}
-              bullets={[
-                'Developed a Python diagnostic tool to validate DES serial data packet integrity across SCADA streams from operating reactor units.',
-                'Built automation scripts that streamlined system validation workflows, reducing manual testing time for control-computer updates.',
-                'Supported rollout of safety-critical software changes across 4 DCC control computers under CSA N290.14-15.',
-                'Held OSCA nuclear site security clearance (CSIS & OPP verified, Pickering & Darlington NGS).',
-              ]}
-            />
+          <div className="resume-entries" ref={listRef}>
             <ResumeEntry
               title="Electrical Assembly Technician Intern"
               company="ABB Ltd."
               dates="Jun 2019 – Aug 2019"
-              stage={{ cue: 'switchgear', label: 'Switchgear', level: 0.6 }}
+              stage={{ cue: 'switchgear', label: 'Switchgear' }}
+              level={levels[0]}
               tags={['Circuit Breaker Retrofit', 'Soldering', 'Multimeters']}
               bullets={[
                 'Retrofitted circuit breakers and assembled control panels on the production floor.',
@@ -863,23 +886,39 @@ export function CareerSection() {
               ]}
             />
             <ResumeEntry
+              title="Student Assembler — Quality Zone"
+              company="Honda of Canada Mfg."
+              dates="May 2021 – Aug 2021"
+              stage={{ cue: 'line', label: 'Quality line' }}
+              level={levels[1]}
+              tags={['Assembly', 'Quality']}
+              bullets={[
+                'Final-quality station: visual + functional inspection of trim, electrical, and fit/finish before vehicles left the line.',
+              ]}
+            />
+            <ResumeEntry
               title="Automotive Production Technician — Engine Zone"
               company="Stellantis NV (FCA)"
               dates="Sep 2021 – Apr 2022"
-              stage={{ cue: 'line', label: 'Engine line', level: 0.42 }}
+              stage={{ cue: 'line', label: 'Engine line' }}
+              level={levels[2]}
               tags={['Assembly', 'Quality', 'Lean']}
               bullets={[
                 'Worked the engine-zone line, hitting takt time without slipping on torque-spec and quality gates.',
               ]}
             />
             <ResumeEntry
-              title="Student Assembler — Quality Zone"
-              company="Honda of Canada Mfg."
-              dates="May 2021 – Aug 2021"
-              stage={{ cue: 'line', label: 'Quality line', level: 0.35 }}
-              tags={['Assembly', 'Quality']}
+              title="Control Computers Intern — Professional Engineering Year"
+              company="Ontario Power Generation · Pickering NGS"
+              dates="May 2022 – Apr 2023"
+              stage={{ cue: 'core', label: 'Nuclear I&C', peakStatus: 'At power' }}
+              level={levels[3]}
+              tags={['Python', 'SCADA', 'DCC/PACE', 'Serial Comms']}
               bullets={[
-                'Final-quality station: visual + functional inspection of trim, electrical, and fit/finish before vehicles left the line.',
+                'Developed a Python diagnostic tool to validate DES serial data packet integrity across SCADA streams from operating reactor units.',
+                'Built automation scripts that streamlined system validation workflows, reducing manual testing time for control-computer updates.',
+                'Supported rollout of safety-critical software changes across 4 DCC control computers under CSA N290.14-15.',
+                'Held OSCA nuclear site security clearance (CSIS & OPP verified, Pickering & Darlington NGS).',
               ]}
             />
           </div>
@@ -893,7 +932,8 @@ export function CareerSection() {
 function EduEntry({ title, sub, dates, courses = [], stage }) {
   const [open, setOpen] = useState(false)
   const contentRef = useRef(null)
-  const power = useStagePower(stage?.level)
+  const level = stage?.level ?? 0.2
+  const power = useStagePower(level)
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -905,7 +945,7 @@ function EduEntry({ title, sub, dates, courses = [], stage }) {
       backgroundColor="var(--bg-card)"
       className="resume-entry resume-entry--edu"
       elementRef={power.ref}
-      {...stageAttrs(power, stage)}
+      {...stageAttrs(power, level)}
     >
       {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
       <div className="resume-row">
