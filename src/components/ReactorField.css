@@ -159,3 +159,12 @@
 @media (max-width: 900px) {
   .rf-dial { display: none; }
 }
+
+/* Touch devices: no travelling flow pulses and no breathing nodes. Each one
+   repaints the full-screen SVG layer every frame, which a phone at 3x density
+   pays for all the way down the page. The traces still switch on section by
+   section; the field just holds still once lit. */
+@media (pointer: coarse) {
+  .rf-flow { display: none; }
+  .reactor-field.is-online .rf-halo { animation: none; }
+}

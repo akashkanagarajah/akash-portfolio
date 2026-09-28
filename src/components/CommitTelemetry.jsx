@@ -91,6 +91,27 @@ export default function CommitTelemetry() {
 
   const summary = `${cal.total.toLocaleString('en-CA')} GitHub contributions in the ${range}, across ${cal.activeDays} active days.`
 
+  // The lamps only depend on the data. Going live or showing a tooltip changes
+  // state here, and without this every one of those re-diffed ~370 cells.
+  const lamps = useMemo(
+    () =>
+      cal.cells.map((c) =>
+        c.void ? (
+          <span key={c.date} className="ct-cell is-void" style={{ gridColumn: c.col + 1, gridRow: c.row + 1 }} />
+        ) : (
+          <span
+            key={c.date}
+            className={`ct-cell${c.today ? ' is-today' : ''}${c.peak ? ' is-peak' : ''}`}
+            data-level={c.level}
+            data-date={c.date}
+            data-count={c.count}
+            style={{ gridColumn: c.col + 1, gridRow: c.row + 1, '--c': c.col, '--r': c.row }}
+          />
+        )
+      ),
+    [cal]
+  )
+
   return (
     <figure ref={panelRef} className={`ct-panel${live ? ' is-live' : ''}${settled ? ' is-settled' : ''}`}>
       <figcaption className="ct-head">
@@ -125,20 +146,7 @@ export default function CommitTelemetry() {
           onMouseOver={showTip}
           onMouseLeave={() => setTip(null)}
         >
-          {cal.cells.map((c) =>
-            c.void ? (
-              <span key={c.date} className="ct-cell is-void" style={{ gridColumn: c.col + 1, gridRow: c.row + 1 }} />
-            ) : (
-              <span
-                key={c.date}
-                className={`ct-cell${c.today ? ' is-today' : ''}${c.peak ? ' is-peak' : ''}`}
-                data-level={c.level}
-                data-date={c.date}
-                data-count={c.count}
-                style={{ gridColumn: c.col + 1, gridRow: c.row + 1, '--c': c.col, '--r': c.row }}
-              />
-            )
-          )}
+          {lamps}
           <span className="ct-scan" aria-hidden="true" />
           {tip && (
             <span

@@ -106,10 +106,15 @@ export function BorderGlow({
 /* ============================================================
    ScrollReveal — per-word opacity + blur as section scrolls into view
    ============================================================ */
+// Touch devices skip the per-word blur: repainting blurred text on every
+// scroll frame is what made headings stutter on phones. Opacity and the small
+// tilt still carry the reveal.
+const COARSE_POINTER = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+
 export function ScrollReveal({
   children,
   baseOpacity = 0,
-  enableBlur = true,
+  enableBlur: blurRequested = true,
   baseRotation = 3,
   blurStrength = 8,
   className = '',
@@ -117,9 +122,16 @@ export function ScrollReveal({
 }) {
   const containerRef = useRef(null)
   const [progress, setProgress] = useState(0)
+  const enableBlur = blurRequested && !COARSE_POINTER
 
   useEffect(() => {
-    const update = () => {
+    // One rect read per frame, however often scroll fires. Every instance
+    // reads in its own rAF callback and React batches the state updates after
+    // them, so reads and writes no longer interleave into forced layouts.
+    // Progress is quantised so an unchanged value skips the re-render.
+    let raf = 0
+    const measure = () => {
+      raf = 0
       const el = containerRef.current
       if (!el) return
       const r = el.getBoundingClientRect()
@@ -127,14 +139,18 @@ export function ScrollReveal({
       const start = vh * 0.95
       const end = vh * 0.3
       const p = 1 - Math.min(Math.max((r.top - end) / (start - end), 0), 1)
-      setProgress(p)
+      setProgress(Math.round(p * 100) / 100)
     }
-    update()
-    const timer = setTimeout(() => update(), 200)
+    const update = () => {
+      if (!raf) raf = requestAnimationFrame(measure)
+    }
+    measure()
+    const timer = setTimeout(update, 200)
     window.addEventListener('scroll', update, { passive: true })
     window.addEventListener('resize', update)
     return () => {
       clearTimeout(timer)
+      cancelAnimationFrame(raf)
       window.removeEventListener('scroll', update)
       window.removeEventListener('resize', update)
     }
