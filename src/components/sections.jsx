@@ -869,7 +869,7 @@ export function CareerSection() {
             Career
           </ScrollReveal>
           <ScrollReveal as="p" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="section-sub">
-            From control rooms to production floors
+            From production floors to control rooms
           </ScrollReveal>
 
           <div className="resume-entries" ref={listRef}>
