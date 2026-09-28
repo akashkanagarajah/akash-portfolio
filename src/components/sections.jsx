@@ -9,6 +9,7 @@ import {
 } from './animations'
 import DockComponent from './Dock'
 import BookShowcase from './BookShowcase'
+import CommitTelemetry from './CommitTelemetry'
 import {
   HERO_PROFILE_PRIMARY_PATH,
   HERO_PROFILE_HOVER_PATH,
@@ -605,6 +606,10 @@ export function BentoSection() {
           </div>
         </PoweredBentoCard>
       </BentoGrid>
+
+      {/* GitHub activity closes the About beat as one more instrument coming
+          online — high on the page, where most visitors actually get to. */}
+      <CommitTelemetry />
     </section>
   )
 }
