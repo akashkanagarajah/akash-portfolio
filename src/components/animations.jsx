@@ -30,8 +30,19 @@ export function BorderGlow({
   coneSpread = 25,
   animated = false,
   colors = ['#C9A84C', '#e8c878', '#C9A84C'],
+  elementRef,
+  style: extraStyle,
+  ...rest
 }) {
   const cardRef = useRef(null)
+  const setRef = useCallback(
+    (el) => {
+      cardRef.current = el
+      if (typeof elementRef === 'function') elementRef(el)
+      else if (elementRef) elementRef.current = el
+    },
+    [elementRef]
+  )
 
   const parts = glowColor.match(/([\d.]+)\s+([\d.]+)\s+([\d.]+)/)
   const h = parts ? parts[1] : 40
@@ -75,11 +86,13 @@ export function BorderGlow({
     '--glow-20': `hsl(${h}deg ${s}% ${l}% / ${20 * glowIntensity}%)`,
     '--glow-10': `hsl(${h}deg ${s}% ${l}% / ${10 * glowIntensity}%)`,
     borderRadius: `${borderRadius}px`,
+    ...extraStyle,
   }
 
   return (
     <div
-      ref={cardRef}
+      {...rest}
+      ref={setRef}
       onPointerMove={handlePointerMove}
       className={`border-glow-card ${className}`}
       style={style}
@@ -195,45 +208,20 @@ export function GradientText({
   showBorder = false,
   inline = false,
 }) {
-  const [pos, setPos] = useState(0)
-  const elapsedRef = useRef(0)
-  const lastRef = useRef(null)
-  const rafRef = useRef(null)
-
-  useEffect(() => {
-    const duration = animationSpeed * 1000
-    const tick = (t) => {
-      if (lastRef.current === null) lastRef.current = t
-      const dt = t - lastRef.current
-      lastRef.current = t
-      elapsedRef.current += dt
-      let p
-      if (yoyo) {
-        const cycle = duration * 2
-        const ct = elapsedRef.current % cycle
-        p = ct < duration ? (ct / duration) * 100 : 100 - ((ct - duration) / duration) * 100
-      } else {
-        p = ((elapsedRef.current / duration) * 100) % 100
-      }
-      setPos(p)
-      rafRef.current = requestAnimationFrame(tick)
-    }
-    rafRef.current = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(rafRef.current)
-  }, [animationSpeed, yoyo])
-
-  const angle =
-    direction === 'horizontal' ? 'to right' : direction === 'vertical' ? 'to bottom' : 'to bottom right'
+  // The pan runs as a CSS animation (keyframes in index.css) so the text never
+  // re-renders; it used to set React state on every animation frame.
+  const horizontal = direction === 'horizontal'
+  const angle = horizontal ? 'to right' : direction === 'vertical' ? 'to bottom' : 'to bottom right'
   const gradientColors = [...colors, colors[0]].join(', ')
   const style = {
     backgroundImage: `linear-gradient(${angle}, ${gradientColors})`,
-    backgroundSize: direction === 'horizontal' ? '300% 100%' : '100% 300%',
+    backgroundSize: horizontal ? '300% 100%' : '100% 300%',
     backgroundRepeat: 'repeat',
-    backgroundPosition: direction === 'horizontal' ? `${pos}% 50%` : `50% ${pos}%`,
     WebkitBackgroundClip: 'text',
     backgroundClip: 'text',
     color: 'transparent',
     display: inline ? 'inline' : 'inline-block',
+    animation: `${horizontal ? 'gradient-pan-x' : 'gradient-pan-y'} ${animationSpeed}s linear infinite${yoyo ? ' alternate' : ''}`,
   }
   return (
     <span className={`animated-gradient-text ${className}`} style={style}>
@@ -589,8 +577,18 @@ export function BentoCard({
   style = {},
   span = '',
   _bento = {},
+  elementRef,
+  ...rest
 }) {
   const ref = useRef(null)
+  const setRef = useCallback(
+    (el) => {
+      ref.current = el
+      if (typeof elementRef === 'function') elementRef(el)
+      else if (elementRef) elementRef.current = el
+    },
+    [elementRef]
+  )
   const {
     enableBorderGlow = true,
     enableStars = true,
@@ -685,7 +683,8 @@ export function BentoCard({
 
   return (
     <div
-      ref={ref}
+      {...rest}
+      ref={setRef}
       className={`magic-bento-card ${enableBorderGlow ? 'with-glow' : ''} ${className}`}
       style={{
         ...style,

@@ -1,0 +1,161 @@
+/* ───────── REACTOR FIELD — fixed circuit backdrop ─────────
+   Sits under every section (z-index -1 paints above the body's canvas
+   background but below all in-flow content). Sized to the large viewport so
+   mobile toolbars showing/hiding never resize or re-slice it. The radial mask
+   quiets the centre so the reading column stays clean. */
+.reactor-field {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  height: 100lvh;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+  -webkit-mask-image: radial-gradient(ellipse 62% 66% at 50% 46%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.5) 48%, #000 100%);
+          mask-image: radial-gradient(ellipse 62% 66% at 50% 46%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.5) 48%, #000 100%);
+}
+
+.rf-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.rf-layer--live {
+  opacity: 0.4;
+  will-change: opacity;
+}
+
+/* cold layer — unpowered wiring */
+.rf-wire {
+  fill: none;
+  stroke: var(--reactor-cold);
+  stroke-width: 1;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: var(--reactor-cold-opacity);
+}
+.rf-pad,
+.rf-via {
+  fill: none;
+  stroke: var(--reactor-cold);
+  stroke-width: 1;
+  opacity: var(--reactor-cold-opacity);
+}
+
+/* live layer — one group per trace, dark until `.is-lit` */
+.rf-trace {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.rf-trace.is-lit {
+  opacity: 1;
+  animation: rf-energize 0.85s linear;
+}
+.rf-glow,
+.rf-lit,
+.rf-flow {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.rf-glow {
+  stroke: var(--accent);
+  stroke-width: 5;
+  opacity: var(--reactor-glow-opacity);
+}
+.rf-lit {
+  stroke: var(--accent);
+  stroke-width: 1.1;
+  opacity: 0.62;
+  transition: opacity 0.8s ease;
+}
+.rf-flow {
+  stroke: var(--accent-2);
+  stroke-width: 1.8;
+  stroke-dashoffset: var(--pulse-from);
+  animation: rf-flow var(--dur) linear var(--delay) infinite;
+  animation-play-state: paused;
+}
+.rf-trace.is-lit .rf-flow { animation-play-state: running; }
+.rf-node { fill: var(--accent-2); }
+.rf-node-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+/* A trace coming online: a couple of brownout flickers, a surge, then steady. */
+@keyframes rf-energize {
+  0%   { opacity: 0; }
+  12%  { opacity: 0.85; }
+  18%  { opacity: 0.1; }
+  30%  { opacity: 1; }
+  38%  { opacity: 0.45; }
+  52%  { opacity: 1; }
+  100% { opacity: 1; }
+}
+@keyframes rf-flow {
+  from { stroke-dashoffset: var(--pulse-from); }
+  to   { stroke-dashoffset: var(--pulse-to); }
+}
+
+/* Fully online (Connect): lines at full strength and every node breathing. */
+.reactor-field.is-online .rf-lit { opacity: 0.85; }
+.reactor-field.is-online .rf-halo { animation: rf-breathe 2.6s ease-in-out infinite; }
+.reactor-field.is-online .rf-trace:nth-child(odd) .rf-halo { animation-delay: -1.3s; }
+.reactor-field.is-online .rf-dial-sweep { opacity: 0.8; }
+@keyframes rf-breathe {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* corner gauge — landscape only, bled off the bottom-right corner */
+.rf-dial {
+  position: absolute;
+  right: -110px;
+  bottom: -150px;
+  width: 400px;
+  height: 400px;
+  overflow: visible;
+}
+.rf-dial-track,
+.rf-dial-inner,
+.rf-dial-tick,
+.rf-dial-hub {
+  fill: none;
+  stroke: var(--reactor-cold);
+  stroke-width: 1;
+  opacity: var(--reactor-cold-opacity);
+}
+.rf-dial-inner { stroke-dasharray: 2 6; }
+.rf-dial-tick.is-major { stroke-width: 1.5; opacity: calc(var(--reactor-cold-opacity) * 1.6); }
+.rf-dial-sweep {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.rf-dial-needle {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.rf-dial-hub { fill: var(--reactor-cold); stroke: none; }
+
+/* Reduced motion: already lit at low intensity, nothing moves. */
+.reactor-field.is-static .rf-trace { transition: none; animation: none; }
+.reactor-field.is-static .rf-flow { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rf-trace, .rf-flow, .rf-halo, .rf-lit { animation: none !important; transition: none !important; }
+}
+
+@media (max-width: 900px) {
+  .rf-dial { display: none; }
+}
