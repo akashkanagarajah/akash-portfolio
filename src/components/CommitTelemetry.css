@@ -1,0 +1,277 @@
+/* ───────── COMMIT TELEMETRY — GitHub calendar as a lamp panel ─────────
+   Every colour comes from the theme tokens, so the panel holds up in light
+   mode as well as dark. Lamp intensities mix the accent into --readout-off
+   (the same "unlit lamp" tone the other panels use). */
+.ct-panel {
+  --ct-gap: 3px;
+  --ct-l1: color-mix(in srgb, var(--accent) 32%, var(--readout-off));
+  --ct-l2: color-mix(in srgb, var(--accent) 56%, var(--readout-off));
+  --ct-l3: color-mix(in srgb, var(--accent) 80%, var(--readout-off));
+  --ct-l4: var(--accent-2);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  /* Sits as a full-width row under the About bento grid, on the same 1rem
+     gap and 20px radius as the bento cards. */
+  margin-top: 1rem;
+  padding: 1.4rem 1.6rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-card);
+  transition: border-color 0.6s ease, box-shadow 0.6s ease;
+}
+/* Light theme: --accent-2 is lighter than --accent there, which would make the
+   busiest days read weaker than level 3. The deeper tag gold keeps the scale
+   climbing. */
+:root[data-theme="light"] .ct-panel { --ct-l4: var(--tag-text); }
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .ct-panel {
+    --ct-l1: var(--accent-border);
+    --ct-l2: var(--accent-border-hover);
+    --ct-l3: var(--accent);
+  }
+}
+.ct-panel.is-live {
+  border-color: var(--accent-border);
+  box-shadow: 0 18px 50px -30px var(--accent-border-hover);
+}
+
+/* header: title lamp + counting total */
+.ct-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+}
+.ct-title {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ct-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--readout-off);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.ct-panel.is-live .ct-led {
+  background: var(--accent-2);
+  box-shadow: 0 0 6px var(--accent-2);
+  animation: readout-breathe 1.8s ease-in-out infinite;
+}
+.ct-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.6rem;
+}
+.ct-total__value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.ct-total__label {
+  white-space: nowrap;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* calendar: cell size follows the panel width, capped so it never gets chunky */
+.ct-scroll {
+  container-type: inline-size;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  --ct-cell: clamp(6px, calc((100cqw - (var(--weeks) - 1) * var(--ct-gap)) / var(--weeks)), 18px);
+}
+@supports not (width: 1cqw) {
+  .ct-scroll { --ct-cell: 8px; }
+}
+.ct-months,
+.ct-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--weeks), var(--ct-cell));
+  column-gap: var(--ct-gap);
+}
+.ct-months {
+  height: 1.1em;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ct-months span { white-space: nowrap; }
+.ct-grid {
+  position: relative;
+  grid-template-rows: repeat(7, var(--ct-cell));
+  row-gap: var(--ct-gap);
+}
+
+/* lamps: dark until the panel goes live */
+.ct-cell {
+  border-radius: 3px;
+  background: var(--readout-off);
+}
+.ct-grid .ct-cell.is-void { background: transparent; }
+.ct-grid .ct-cell[data-date]:hover {
+  outline: 1px solid var(--text-muted);
+  outline-offset: 1px;
+}
+.ct-panel.is-live .ct-grid .ct-cell[data-level="1"],
+.ct-cell--key[data-level="1"] { background: var(--ct-l1); }
+.ct-panel.is-live .ct-grid .ct-cell[data-level="2"],
+.ct-cell--key[data-level="2"] { background: var(--ct-l2); }
+.ct-panel.is-live .ct-grid .ct-cell[data-level="3"],
+.ct-cell--key[data-level="3"] { background: var(--ct-l3); }
+.ct-panel.is-live .ct-grid .ct-cell[data-level="4"],
+.ct-cell--key[data-level="4"] {
+  background: var(--ct-l4);
+  box-shadow: 0 0 5px var(--accent-border-hover);
+}
+.ct-panel.is-live .ct-grid .ct-cell.is-peak {
+  box-shadow: 0 0 0 1px var(--accent-2), 0 0 10px var(--accent-2);
+}
+
+/* The scan: each lamp switches on as the line passes its week. Active days
+   flash bright then settle to their level; empty days just glint. */
+.ct-panel.is-live .ct-grid .ct-cell[data-date] {
+  animation: ct-glint 0.45s ease-out backwards;
+  animation-delay: calc(var(--c) * var(--step) + var(--r) * 14ms);
+}
+.ct-panel.is-live .ct-grid .ct-cell[data-date]:not([data-level="0"]) {
+  animation-name: ct-lamp-on;
+  animation-duration: 0.55s;
+}
+@keyframes ct-lamp-on {
+  0%  { background: var(--readout-off); box-shadow: none; }
+  35% { background: var(--accent-2); transform: scale(1.3); box-shadow: 0 0 10px var(--accent-2); }
+}
+@keyframes ct-glint {
+  30% { background: color-mix(in srgb, var(--accent) 28%, var(--readout-off)); }
+}
+.ct-scan {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent calc(100% - 40px),
+    color-mix(in srgb, var(--accent-2) 30%, transparent) calc(100% - 4px),
+    var(--accent-2) calc(100% - 1.5px),
+    transparent
+  );
+  transform: translateX(-100%);
+}
+.ct-panel.is-live .ct-scan {
+  animation: ct-scan var(--scan) linear both;
+}
+@keyframes ct-scan {
+  0%   { opacity: 1; transform: translateX(-100%); }
+  94%  { opacity: 1; }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+/* Latest day keeps a slow radar ping once the scan has passed. The ring stays
+   hidden during the delay; reduced motion shows it as a static outline. */
+.ct-grid .ct-cell.is-today { position: relative; }
+.ct-panel.is-live .ct-grid .ct-cell.is-today::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  opacity: 0;
+  animation: ct-ping 2.4s ease-out calc(var(--scan) + 0.2s) infinite;
+}
+.ct-panel.is-settled .ct-grid .ct-cell.is-today::after { animation-delay: 0s; }
+/* After the first sweep, re-renders show the finished panel without replaying
+   it (selectors out-rank the lamp rules above, :not() included). */
+.ct-panel.is-live.is-settled .ct-grid .ct-cell[data-date],
+.ct-panel.is-live.is-settled .ct-grid .ct-cell[data-date]:not([data-level="0"]),
+.ct-panel.is-live.is-settled .ct-scan { animation: none; }
+
+@keyframes ct-ping {
+  0%   { opacity: 0.9; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.7); }
+}
+
+/* hover readout */
+.ct-tip {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, calc(-100% - 8px));
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border-hover);
+  border-radius: 6px;
+  background: var(--bg-card-hover);
+  box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ct-tip.is-start { transform: translate(-6px, calc(-100% - 8px)); }
+.ct-tip.is-end { transform: translate(calc(-100% + 6px), calc(-100% - 8px)); }
+
+/* footer: legend and link */
+.ct-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.4rem;
+  flex-wrap: wrap;
+  font-size: 0.6rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ct-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ct-legend > span:first-child { margin-right: 4px; }
+.ct-legend > span:last-child { margin-left: 4px; }
+.ct-cell--key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+.ct-link {
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-border);
+  transition: border-color 0.2s;
+}
+.ct-link:hover { border-color: var(--accent); }
+
+@media (max-width: 768px) {
+  .ct-panel {
+    padding: 1.1rem 1rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-panel .ct-led,
+  .ct-panel .ct-grid .ct-cell,
+  .ct-panel .ct-grid .ct-cell::after,
+  .ct-panel .ct-scan { animation: none !important; transition: none !important; }
+  .ct-panel.is-live .ct-grid .ct-cell.is-today::after { opacity: 1; }
+}
