@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useMotionValueEvent } from 'motion/react'
+import { motion, useMotionValueEvent, useTransform } from 'motion/react'
 import {
   BorderGlow,
   ScrollReveal,
@@ -17,7 +17,13 @@ import {
 } from '../constants/imageAssets'
 import { READING_LIST } from '../constants/readingList'
 import { CONTACT_EMAIL, copyContactEmailToClipboard } from '../lib/copyEmailConfetti'
-import { usePowerProgress } from '../hooks/usePowerProgress'
+import {
+  usePowerProgress,
+  useSectionPower,
+  useElementPower,
+  usePowerSwitch,
+  usePowerSteps,
+} from '../hooks/usePowerProgress'
 
 const SOCIAL_LINKEDIN = 'https://www.linkedin.com/in/akash-k-617498178/'
 const SOCIAL_X = 'https://x.com/akash_21_'
@@ -207,6 +213,18 @@ export function Hero() {
   )
 }
 
+/* ---------- Power-up helpers (Phase 2) ----------
+   Cards "come online" when their top edge climbs past ~80% of the viewport:
+   a lamp flicker, not a fade. Reversible, and always on under reduced motion
+   (useElementPower holds at 1 there). */
+function useSwitchOn() {
+  const ref = useRef(null)
+  const power = useElementPower(ref, { offset: ['start end', 'start 60%'] })
+  return [ref, usePowerSwitch(power, 0.5)]
+}
+
+const switchStyle = (delayMs, style) => ({ ...style, '--switch-delay': `${delayMs}ms` })
+
 /* ---------- Section 2: Bento ---------- */
 function LiveTime() {
   const [now, setNow] = useState(new Date())
@@ -262,6 +280,8 @@ function LiveTime() {
       ? 'same time zone'
       : `${Math.abs(diffHours)}h ${diffHours > 0 ? 'ahead of you' : 'behind you'}`
 
+  const seconds = now.getSeconds()
+
   return (
     <div className="time-widget">
       <div className="time-block">
@@ -269,7 +289,7 @@ function LiveTime() {
           <span className="live-dot" /> MY TIME
           <span className="time-mode">24H</span>
         </div>
-        <div className="time-value">{torontoTime}</div>
+        <div className="time-value time-value--chrono">{torontoTime}</div>
         <div className="time-tz">{torontoAbbr} · Toronto</div>
       </div>
       <div className="time-diff">
@@ -279,8 +299,15 @@ function LiveTime() {
       </div>
       <div className="time-block">
         <div className="time-label">YOUR TIME</div>
-        <div className="time-value">{visitorTime}</div>
+        <div className="time-value time-value--chrono">{visitorTime}</div>
         <div className="time-tz">{visitorAbbr}</div>
+      </div>
+      <div className="time-scale" aria-hidden="true">
+        <span className="time-scale__label">SEC</span>
+        <span className="time-scale__track">
+          <span className="time-scale__lit" style={{ width: `${((seconds + 1) / 60) * 100}%` }} />
+        </span>
+        <span className="time-scale__value">{String(seconds).padStart(2, '0')}</span>
       </div>
     </div>
   )
@@ -576,6 +603,11 @@ function SkillsPanel() {
   )
 }
 
+function PoweredBentoCard({ delay = 0, style, ...props }) {
+  const [ref, on] = useSwitchOn()
+  return <BentoCard {...props} elementRef={ref} data-power={on ? 'on' : 'off'} style={switchStyle(delay, style)} />
+}
+
 export function BentoSection() {
   return (
     <section className="bento-section" id="about">
@@ -593,19 +625,19 @@ export function BentoSection() {
         clickEffect={true}
         spotlightRadius={350}
       >
-        <BentoCard className="bento-about" span="about">
+        <PoweredBentoCard className="bento-about" span="about">
           <AboutPager />
-        </BentoCard>
+        </PoweredBentoCard>
 
-        <BentoCard className="bento-time" span="time">
+        <PoweredBentoCard className="bento-time" span="time" delay={140}>
           <LiveTime />
-        </BentoCard>
+        </PoweredBentoCard>
 
-        <BentoCard className="bento-skills" span="skills">
+        <PoweredBentoCard className="bento-skills" span="skills">
           <SkillsPanel />
-        </BentoCard>
+        </PoweredBentoCard>
 
-        <BentoCard className="bento-now" span="now">
+        <PoweredBentoCard className="bento-now" span="now" delay={140}>
           <div className="bento-label">CURRENTLY BUILDING</div>
           <div className="now-title">PartyNI</div>
           <p className="now-desc">
@@ -614,9 +646,9 @@ export function BentoSection() {
           <div className="bento-divider" />
           <div className="bento-label">CURRENTLY LEARNING</div>
           <p className="now-desc">Agentic workflow design &amp; AI-assisted development pipelines.</p>
-        </BentoCard>
+        </PoweredBentoCard>
 
-        <BentoCard className="bento-bad" span="bad">
+        <PoweredBentoCard className="bento-bad" span="bad" delay={280}>
           <div className="bento-label">I ♥ BADMINTON</div>
           <p className="bad-desc">
             To decompress, I turn to sports. Badminton is my go-to: TMU varsity team, two-time ROPSSAA champion, OFSAA finalist (runner-up). I currently coach youth and adult athletes with the City of Brampton.
@@ -633,7 +665,7 @@ export function BentoSection() {
               decoding="async"
             />
           </div>
-        </BentoCard>
+        </PoweredBentoCard>
       </BentoGrid>
     </section>
   )
@@ -644,6 +676,7 @@ export function BentoSection() {
    builds its whole scene inside BookShowcase's useEffect, so nothing here
    touches WebGL at module scope. */
 export function ReadingSection() {
+  const on = usePowerSwitch(useSectionPower('reading'), 0.6)
   return (
     <section className="reading-section" id="reading">
       <div className="section-heading center">
@@ -655,12 +688,97 @@ export function ReadingSection() {
       </div>
 
       <BookShowcase books={READING_LIST} ariaLabel="Reading list, interactive 3D bookshelf" />
+
+      <div className="logbook-rail" data-power={on ? 'on' : 'off'} aria-hidden="true">
+        <span className="logbook-rail__line" />
+        <span className="logbook-rail__label">
+          <span className="logbook-rail__led" />
+          Logbook · {String(READING_LIST.length).padStart(2, '0')} entries
+        </span>
+        <span className="logbook-rail__line" />
+      </div>
     </section>
   )
 }
 
+/* ---------- Stage plates (career / education) ----------
+   Each entry carries a rated power level for its stage of the arc, peaking at
+   OPG (nuclear I&C). As the entry scrolls in its meter charges up to that level
+   and the card's glow scales with it, so the escalation reads by intensity
+   rather than by list position. Layered over the entry; content is untouched. */
+const STAGE_ICONS = {
+  // Nuclear / SCADA: an abstract core — nucleus with three orbits.
+  core: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+      <ellipse cx="12" cy="12" rx="10" ry="4" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  // Switchgear: the schematic symbol for an open breaker contact.
+  switchgear: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+      <path d="M2 14h5M17 14h5M7.6 13.6 16 7" />
+      <circle cx="7" cy="14" r="1.3" />
+      <circle cx="17" cy="14" r="1.3" />
+      <path d="M12 19v2M9 21h6" />
+    </svg>
+  ),
+  // Assembly line: a conveyor carrying parts.
+  line: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="14" width="20" height="5" rx="2.5" />
+      <circle cx="5.5" cy="16.5" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="18.5" cy="16.5" r="0.9" fill="currentColor" stroke="none" />
+      <rect x="5" y="8.5" width="4.5" height="4.5" rx="0.6" />
+      <rect x="13" y="8.5" width="4.5" height="4.5" rx="0.6" />
+    </svg>
+  ),
+  // Education: stacked foundation courses.
+  foundation: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 18h18M5 14h14M7 10h10M9 6h6" />
+    </svg>
+  ),
+}
+
+function StagePlate({ stage, charge, on, peak }) {
+  const status = !on ? 'Standby' : peak ? stage.peakStatus ?? 'Online' : 'Ramping'
+  return (
+    <div className="stage-plate" aria-hidden="true">
+      <span className="stage-plate__icon">{STAGE_ICONS[stage.cue]}</span>
+      <span className="stage-plate__label">{stage.label}</span>
+      <span className="stage-plate__gauge">
+        <span className="stage-plate__meter">
+          <motion.span className="stage-plate__fill" style={{ scaleX: charge }} />
+        </span>
+        <span className="stage-plate__rated" />
+      </span>
+      <span className="stage-plate__status">{status}</span>
+    </div>
+  )
+}
+
+/* Power wiring shared by career and education entries. */
+function useStagePower(level = 1) {
+  const ref = useRef(null)
+  const power = useElementPower(ref, { offset: ['start end', 'center 55%'] })
+  const charge = useTransform(power, [0, 1], [0, level])
+  const on = usePowerSwitch(power, 0.2)
+  const peak = usePowerSwitch(power, 0.98)
+  return { ref, charge, on, peak }
+}
+
+const stageAttrs = ({ on, peak }, stage) => ({
+  'data-power': on ? 'on' : 'off',
+  'data-peak': peak && stage?.level === 1 ? 'true' : undefined,
+  style: { '--stage-level': stage?.level ?? 0.4 },
+})
+
 /* ---------- Resume entry (career / education) ---------- */
-function ResumeEntry({ title, company, dates, tags = [], bullets = [], children }) {
+function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, children }) {
+  const power = useStagePower(stage?.level)
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -671,7 +789,10 @@ function ResumeEntry({ title, company, dates, tags = [], bullets = [], children 
       animated={false}
       backgroundColor="var(--bg-card)"
       className="resume-entry"
+      elementRef={power.ref}
+      {...stageAttrs(power, stage)}
     >
+      {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
       <div className="resume-row">
         <h3 className="resume-title">{title}</h3>
         <span className="resume-date">{dates}</span>
@@ -721,6 +842,7 @@ export function CareerSection() {
               title="Control Computers Intern — Professional Engineering Year"
               company="Ontario Power Generation · Pickering NGS"
               dates="May 2022 – Apr 2023"
+              stage={{ cue: 'core', label: 'Nuclear I&C', level: 1, peakStatus: 'At power' }}
               tags={['Python', 'SCADA', 'DCC/PACE', 'Serial Comms']}
               bullets={[
                 'Developed a Python diagnostic tool to validate DES serial data packet integrity across SCADA streams from operating reactor units.',
@@ -733,6 +855,7 @@ export function CareerSection() {
               title="Electrical Assembly Technician Intern"
               company="ABB Ltd."
               dates="Jun 2019 – Aug 2019"
+              stage={{ cue: 'switchgear', label: 'Switchgear', level: 0.6 }}
               tags={['Circuit Breaker Retrofit', 'Soldering', 'Multimeters']}
               bullets={[
                 'Retrofitted circuit breakers and assembled control panels on the production floor.',
@@ -743,6 +866,7 @@ export function CareerSection() {
               title="Automotive Production Technician — Engine Zone"
               company="Stellantis NV (FCA)"
               dates="Sep 2021 – Apr 2022"
+              stage={{ cue: 'line', label: 'Engine line', level: 0.42 }}
               tags={['Assembly', 'Quality', 'Lean']}
               bullets={[
                 'Worked the engine-zone line, hitting takt time without slipping on torque-spec and quality gates.',
@@ -752,6 +876,7 @@ export function CareerSection() {
               title="Student Assembler — Quality Zone"
               company="Honda of Canada Mfg."
               dates="May 2021 – Aug 2021"
+              stage={{ cue: 'line', label: 'Quality line', level: 0.35 }}
               tags={['Assembly', 'Quality']}
               bullets={[
                 'Final-quality station: visual + functional inspection of trim, electrical, and fit/finish before vehicles left the line.',
@@ -765,9 +890,10 @@ export function CareerSection() {
 }
 
 /* ---------- Section 4: Education ---------- */
-function EduEntry({ title, sub, dates, courses = [] }) {
+function EduEntry({ title, sub, dates, courses = [], stage }) {
   const [open, setOpen] = useState(false)
   const contentRef = useRef(null)
+  const power = useStagePower(stage?.level)
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -777,8 +903,11 @@ function EduEntry({ title, sub, dates, courses = [] }) {
       glowIntensity={0.8}
       animated={false}
       backgroundColor="var(--bg-card)"
-      className="resume-entry"
+      className="resume-entry resume-entry--edu"
+      elementRef={power.ref}
+      {...stageAttrs(power, stage)}
     >
+      {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
       <div className="resume-row">
         <h3 className="resume-title">{title}</h3>
         <span className="resume-date">{dates}</span>
@@ -837,6 +966,7 @@ export function EducationSection() {
               title="Toronto Metropolitan University"
               sub="Bachelor of Engineering — Computer Engineering (B.Eng.)"
               dates="2019 – 2024"
+              stage={{ cue: 'foundation', label: 'Foundations', level: 0.25 }}
               courses={[
                 'Computer Architecture',
                 'Embedded Systems',
@@ -854,6 +984,7 @@ export function EducationSection() {
               title="Advanced Placement High School"
               sub="AP Honours Graduate"
               dates="2016 – 2019"
+              stage={{ cue: 'foundation', label: 'Pre-university', level: 0.15 }}
               courses={['AP Calculus', 'AP Physics', 'AP Chemistry', 'AP Computer Science', 'AP English']}
             />
           </div>
@@ -870,6 +1001,7 @@ const PROJECTS = [
     dates: '2024 – Present · Co-Founder',
     desc: 'Co-founding PartyNI — a marketplace that connects customers with event vendors, handling everything from discovery and booking to secure payments and communication in one place.',
     tags: ['Full-Stack', 'Marketplace', 'Product Development', 'Co-Founder'],
+    system: 'Web · Marketplace',
     // Featured: gold border rather than a full-width row. A full-width card needs an
     // even number of ordinary cards above it or it leaves a half-empty row, so it
     // broke the moment a sixth project landed. In-cell emphasis keeps the two-column
@@ -881,34 +1013,43 @@ const PROJECTS = [
     dates: 'Aug 2026 – Present',
     desc: "Self-hosted home security that pings your phone instead of making you scrub footage. Reolink cameras feed Frigate for local person detection — no cloud, no subscription — and a Telegram bot sends the photo the second someone's at the door. Face recognition was built, then cut.",
     tags: ['Frigate', 'Telegram Bot API', 'Docker', 'Computer Vision'],
+    system: 'Vision · Edge',
   },
   {
     title: 'RISC CPU on FPGA',
     dates: '2024',
     desc: 'A custom RISC processor synthesized on FPGA — full instruction fetch, decode, execute and memory stages. Designed the ISA, datapath and control logic from the ground up.',
     tags: ['VHDL', 'FPGA (Xilinx)', 'RISC Architecture', 'Computer Architecture'],
+    system: 'FPGA · CPU',
   },
   {
     title: 'FPGA VGA Pong Game',
     dates: '2024',
     desc: 'Pong on an FPGA in VHDL, driving VGA output for real-time graphics rendering. Built end-to-end from clock dividers to sprite rasterization.',
     tags: ['VHDL', 'FPGA (Xilinx)', 'VGA Display', 'Digital Logic'],
+    system: 'FPGA · Video',
   },
   {
     title: 'Control Computer Validation Automation',
     dates: 'May 2022 – April 2023',
     desc: 'Python automation that streamlined system validation workflows and reduced manual testing time for control-computer updates in a safety-critical nuclear environment. Rollout across 4 DCC control computers.',
     tags: ['Python', 'Automation', 'DCC/PACE', 'CSA N290.14-15'],
+    system: 'DCC · Validation',
   },
   {
     title: 'SCADA Data Integrity Diagnostic Tool',
     dates: 'May 2022 – April 2023',
     desc: 'Python diagnostic tool at OPG Pickering NGS to validate DES serial data packet integrity, parsing hexadecimal sequence numbers to detect corruption and transmission errors in SCADA data streams from operating reactor units.',
     tags: ['Python', 'SCADA', 'Serial Comms', 'Data Validation'],
+    system: 'SCADA · Diagnostics',
   },
 ]
 
-function ProjectCard({ p }) {
+/* Each project reads as a subsystem on the panel: an id, what it is, and a
+   status lamp — lit and pulsing while the project is still running. */
+function ProjectCard({ p, index }) {
+  const [ref, on] = useSwitchOn()
+  const active = /present/i.test(p.dates)
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -919,7 +1060,16 @@ function ProjectCard({ p }) {
       animated={false}
       backgroundColor={p.featured ? 'var(--bg-card-featured)' : 'var(--bg-card)'}
       className={`project-card${p.featured ? ' project-card--featured' : ''}`}
+      elementRef={ref}
+      data-power={on ? 'on' : 'off'}
+      style={switchStyle((index % 2) * 140)}
     >
+      <div className="psc-readout" data-state={active ? 'active' : 'complete'} aria-hidden="true">
+        <span className="psc-led" />
+        <span className="psc-id">SUB-{String(index + 1).padStart(2, '0')}</span>
+        {p.system && <span className="psc-sys">{p.system}</span>}
+        <span className="psc-status">{active ? 'Active' : 'Complete'}</span>
+      </div>
       <span className="psc-date">{p.dates}</span>
       <h3 className="psc-title">{p.title}</h3>
       <p className="psc-desc">{p.desc}</p>
@@ -950,7 +1100,7 @@ export function ProjectsSection() {
       </div>
       <div className="projects-grid">
         {PROJECTS.map((p, i) => (
-          <ProjectCard key={i} p={p} />
+          <ProjectCard key={i} p={p} index={i} />
         ))}
       </div>
     </section>
@@ -1047,6 +1197,38 @@ function ConnectEmailCopyCard() {
   )
 }
 
+/* Annunciator: one lamp per section, lighting in sequence as Connect scrolls
+   in; the last lamp lands at the bottom of the page. All lit = panel fully
+   online, the resolution of the whole power-up. */
+const ANNUNCIATOR = [
+  ['about', 'About'],
+  ['reading', 'Reading'],
+  ['resume', 'Career'],
+  ['education', 'Education'],
+  ['projects', 'Projects'],
+  ['connect', 'Connect'],
+]
+
+function Annunciator() {
+  const lit = usePowerSteps(useSectionPower('connect'), ANNUNCIATOR.length)
+  const ready = lit === ANNUNCIATOR.length
+  return (
+    <div className={`annunciator${ready ? ' is-ready' : ''}`} aria-hidden="true">
+      <div className="annunciator__grid">
+        {ANNUNCIATOR.map(([id, label], i) => (
+          <span key={id} className={`annunciator__tile${i < lit ? ' is-lit' : ''}`}>
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="annunciator__status">
+        <span className="annunciator__led" />
+        {ready ? 'All systems online · ready' : `${lit} / ${ANNUNCIATOR.length} systems online`}
+      </div>
+    </div>
+  )
+}
+
 export function ConnectSection() {
   return (
     <section className="connect-section" id="connect">
@@ -1054,6 +1236,7 @@ export function ConnectSection() {
         <h2 className="section-title">Connect</h2>
         <p className="section-sub">Always open to a conversation about engineering, opportunities, or badminton.</p>
       </div>
+      <Annunciator />
       <div className="connect-cards">
         <ConnectCard
           href={SOCIAL_LINKEDIN}

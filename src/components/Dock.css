@@ -29,6 +29,19 @@
   transition: background 0.45s ease, border-color 0.45s ease;
 }
 
+/* Instrument-panel chrome: a gold hairline along the top edge, like a lit
+   bezel. Purely decorative — no effect on layout or the magnification logic. */
+.dock-panel::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 18%;
+  right: 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-border-hover), transparent);
+  pointer-events: none;
+}
+
 .dock-item {
   position: relative;
   display: inline-flex;

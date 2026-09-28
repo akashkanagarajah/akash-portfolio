@@ -187,3 +187,32 @@ export function useSectionPower(id, { from = 'enter', to = 'center', smooth = fa
 
   return local
 }
+
+/* Element-level power, 0 → 1, for pieces inside a section that need their own
+   timing (cards, entries). `offset` is motion's useScroll target offset — the
+   default ramps from the element's top entering the viewport to its centre
+   reaching the middle. Holds at 1 under reduced motion. */
+export function useElementPower(ref, { offset = ['start end', 'center center'] } = {}) {
+  const { reducedMotion } = usePowerProgress()
+  const { scrollYProgress } = useScroll({ target: ref, offset })
+  const full = useMotionValue(1)
+  return reducedMotion ? full : scrollYProgress
+}
+
+/* Discrete reads of a power MotionValue, for lamp-style on/off states. They
+   only re-render when the answer changes, never per scroll frame. */
+export function usePowerSwitch(value, threshold = 0.5) {
+  const [on, setOn] = useState(() => value.get() >= threshold)
+  useMotionValueEvent(value, 'change', (v) => setOn(v >= threshold))
+  useEffect(() => setOn(value.get() >= threshold), [value, threshold])
+  return on
+}
+
+// How many of `steps` evenly spaced lamps are lit (0…steps).
+export function usePowerSteps(value, steps) {
+  const count = (v) => Math.round(clamp01(v) * steps)
+  const [n, setN] = useState(() => count(value.get()))
+  useMotionValueEvent(value, 'change', (v) => setN(count(v)))
+  useEffect(() => setN(count(value.get())), [value, steps])
+  return n
+}

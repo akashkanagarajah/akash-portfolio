@@ -139,6 +139,10 @@ const GENERATED = {
   tall: generateLayout(LAYOUTS.tall),
 }
 
+/* Share of traces each section powers. Career is the heart of the arc, so it
+   lights the biggest batch; Education stays a quieter beat. */
+const SECTION_WEIGHTS = { about: 1, reading: 0.8, resume: 1.8, education: 0.7, projects: 1.2, connect: 0.9 }
+
 /* Spread traces across the sections after the hero, top of the screen first, so
    each section lights its own batch between its `enter` and `center` landmarks.
    Returns each trace's rank in lighting order plus the sorted thresholds. */
@@ -146,17 +150,22 @@ function scheduleTraces(traces, landmarks, sections) {
   const n = traces.length
   const byHeight = traces.map((_, i) => i).sort((a, b) => traces[a].midY - traces[b].midY)
   const groups = sections.slice(1).filter((id) => landmarks[id])
+  const weights = groups.map((id) => SECTION_WEIGHTS[id] ?? 1)
+  const total = weights.reduce((a, b) => a + b, 0)
   const thresholds = new Array(n)
   byHeight.forEach((ti, k) => {
     if (!groups.length) {
       thresholds[ti] = 0.02 + (k / n) * 0.93
       return
     }
-    const slot = (k / n) * groups.length
-    const g = Math.floor(slot)
+    // Walk the cumulative weights to find this trace's section and its place in it.
+    let slot = ((k + 0.5) / n) * total
+    let g = 0
+    while (g < groups.length - 1 && slot > weights[g]) slot -= weights[g++]
+    const within = Math.min(1, slot / weights[g])
     const lm = landmarks[groups[g]]
     const b = Math.max(lm.center, lm.enter + 0.01)
-    thresholds[ti] = Math.max(0.006, lm.enter + (b - lm.enter) * (0.08 + (slot - g) * 0.84))
+    thresholds[ti] = Math.max(0.006, lm.enter + (b - lm.enter) * (0.08 + within * 0.84))
   })
   const order = thresholds.map((_, i) => i).sort((a, b) => thresholds[a] - thresholds[b])
   const rank = new Array(n)
@@ -191,7 +200,9 @@ const DIAL_INNER = `M${DIAL.cx - DIAL.r + 30} ${DIAL.cy} A${DIAL.r - 30} ${DIAL.
 const STATIC_POWER = 0.12 // reduced motion: lit, but at low intensity
 
 export default function ReactorField() {
-  const { progress, power, landmarks, sections, reducedMotion } = usePowerProgress()
+  const { progress, power, landmarks, sections, activeSection, reducedMotion } = usePowerProgress()
+  // Connect is the resolution: every trace is lit by then, and the panel reads fully online.
+  const online = activeSection === sections[sections.length - 1]
   const portrait = useMediaQuery('(max-aspect-ratio: 1/1)')
   const layout = portrait ? GENERATED.tall : GENERATED.wide
 
@@ -234,7 +245,7 @@ export default function ReactorField() {
   const viewBox = `0 0 ${W} ${H}`
 
   return (
-    <div className={`reactor-field${reducedMotion ? ' is-static' : ''}`} aria-hidden="true">
+    <div className={`reactor-field${reducedMotion ? ' is-static' : ''}${online ? ' is-online' : ''}`} aria-hidden="true">
       <svg className="rf-layer rf-layer--cold" viewBox={viewBox} preserveAspectRatio="xMidYMid slice">
         {traces.map((t, i) => (
           <g key={i}>

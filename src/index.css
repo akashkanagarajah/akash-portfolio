@@ -1384,6 +1384,361 @@ button.connect-link:disabled {
 .connect-name { font-size: 0.95rem; font-weight: 500; color: var(--text); }
 .connect-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; }
 
+/* ───────── REACTOR ONLINE — sections powering up ─────────
+   Cards, entries and lamps carry data-power="off|on" from the power hooks.
+   Switching on is a lamp flicker (opacity only, so it stays composited) plus a
+   short settle; switching off fades back. Every colour here comes from the
+   theme tokens, so energised states hold up in light mode as well as dark. */
+:is(.magic-bento-card, .project-card, .resume-entry)[data-power="off"] {
+  opacity: 0.3;
+  translate: 0 14px;
+}
+:is(.magic-bento-card, .project-card, .resume-entry)[data-power="on"] {
+  animation: power-switch-on 0.7s linear var(--switch-delay, 0ms) backwards;
+}
+.magic-bento-card[data-power] {
+  transition:
+    opacity 0.5s ease var(--switch-delay, 0ms),
+    translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) var(--switch-delay, 0ms),
+    background 0.25s,
+    border-color 0.25s;
+}
+.project-card[data-power] {
+  transition:
+    opacity 0.5s ease var(--switch-delay, 0ms),
+    translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) var(--switch-delay, 0ms),
+    transform 0.2s ease;
+}
+.resume-entry[data-power] {
+  transition:
+    opacity 0.5s ease,
+    translate 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
+    border-color 0.6s ease,
+    box-shadow 0.6s ease;
+}
+@keyframes power-switch-on {
+  0%   { opacity: 0.3; }
+  14%  { opacity: 0.9; }
+  20%  { opacity: 0.4; }
+  34%  { opacity: 1; }
+  42%  { opacity: 0.7; }
+  58%  { opacity: 1; }
+}
+
+/* Bento: an indicator lamp in each card's corner */
+.magic-bento-card[data-power]::before {
+  content: '';
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--readout-off);
+  z-index: 3;
+  pointer-events: none;
+  transition: background 0.3s ease var(--switch-delay, 0ms), box-shadow 0.3s ease var(--switch-delay, 0ms);
+}
+.magic-bento-card[data-power="on"]::before {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-border-hover);
+}
+
+/* Clock as a panel chronometer: inner bezel, ghost segments, seconds scale */
+.bento-time {
+  outline: 1px solid var(--accent-subtle);
+  outline-offset: -7px;
+}
+.time-value--chrono {
+  position: relative;
+  transition: text-shadow 0.6s ease;
+}
+.time-value--chrono::before {
+  content: '88:88';
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0.05;
+  pointer-events: none;
+}
+.bento-time[data-power="on"] .time-value--chrono { text-shadow: 0 0 22px var(--accent-subtle); }
+.time-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+}
+.time-scale__track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: repeating-linear-gradient(90deg, var(--readout-off) 0 2px, transparent 2px 5px);
+}
+.time-scale__lit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: repeating-linear-gradient(90deg, var(--accent) 0 2px, transparent 2px 5px);
+}
+.time-scale__value {
+  min-width: 2ch;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+/* Reading: logbook rail under the shelf (outside the 3D stage) */
+.logbook-rail {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 720px;
+  margin: 1rem auto 0;
+  padding: 0 1.25rem;
+}
+.logbook-rail__line {
+  flex: 1;
+  height: 7px;
+  background:
+    linear-gradient(var(--border-hover), var(--border-hover)) center / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, var(--border-hover) 0 1px, transparent 1px 14px);
+}
+.logbook-rail__label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.logbook-rail__led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--readout-off);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.logbook-rail[data-power="on"] .logbook-rail__led {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-border-hover);
+}
+
+/* Career + education: glow scales with each entry's rated stage level */
+.resume-entry[data-power="on"] {
+  border-color: color-mix(in srgb, var(--accent) calc(var(--stage-level) * 55%), var(--border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) calc(var(--stage-level) * 16%), transparent),
+    0 18px 48px -24px color-mix(in srgb, var(--accent) calc(var(--stage-level) * 70%), transparent);
+}
+.resume-entry[data-peak="true"] {
+  border-color: var(--accent-border-hover);
+  box-shadow:
+    0 0 0 1px var(--accent-border),
+    0 0 60px -20px var(--accent),
+    0 18px 50px -22px var(--accent-border-hover);
+}
+.stage-plate {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: -0.2rem 0 0.95rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.stage-plate__icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.5s ease;
+}
+.stage-plate__icon svg { width: 100%; height: 100%; display: block; }
+[data-power="on"] .stage-plate__icon { color: var(--accent); }
+.stage-plate__label {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stage-plate__gauge {
+  position: relative;
+  width: 76px;
+  height: 5px;
+  flex-shrink: 0;
+}
+.stage-plate__meter {
+  position: absolute;
+  inset: 0;
+  background: var(--readout-off);
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+          mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
+}
+.stage-plate__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.stage-plate__rated {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: calc(var(--stage-level) * 100% - 1px);
+  width: 1px;
+  background: var(--text-muted);
+  opacity: 0.7;
+}
+.stage-plate__status {
+  min-width: 6.2em;
+  text-align: right;
+  transition: color 0.4s ease;
+}
+[data-power="on"] .stage-plate__status { color: var(--accent); }
+[data-peak="true"] .stage-plate__status { color: var(--accent-2); }
+[data-peak="true"] .stage-plate__icon svg {
+  animation: stage-core-spin 14s linear infinite;
+  filter: drop-shadow(0 0 4px var(--accent-border-hover));
+}
+@keyframes stage-core-spin { to { transform: rotate(360deg); } }
+
+/* Projects: subsystem readout strip */
+.psc-readout {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.1rem;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.psc-led {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--readout-off);
+  transition: background 0.4s ease var(--switch-delay, 0ms), box-shadow 0.4s ease var(--switch-delay, 0ms);
+}
+[data-power="on"] .psc-led {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-border-hover);
+}
+[data-power="on"] .psc-readout[data-state="active"] .psc-led {
+  background: var(--accent-2);
+  animation: readout-breathe 1.6s ease-in-out infinite;
+}
+.psc-id {
+  color: var(--accent);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.psc-sys {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Connect: annunciator panel — one lamp per section */
+.annunciator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+.annunciator__grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+.annunciator__tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-muted);
+  transition: color 0.35s, background 0.35s, border-color 0.35s, box-shadow 0.35s;
+}
+.annunciator__tile.is-lit {
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border-color: var(--accent-border-hover);
+  box-shadow: inset 0 0 12px var(--accent-subtle), 0 0 14px -4px var(--accent-border-hover);
+  animation: power-switch-on 0.6s linear;
+}
+.annunciator__status {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: color 0.4s;
+}
+.annunciator__led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--readout-off);
+  transition: background 0.4s, box-shadow 0.4s;
+}
+.annunciator.is-ready .annunciator__status { color: var(--accent); }
+.annunciator.is-ready .annunciator__led {
+  background: var(--accent-2);
+  box-shadow: 0 0 8px var(--accent-2);
+}
+
+/* GradientText pan (was a per-frame React state update) */
+@keyframes gradient-pan-x { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes gradient-pan-y { from { background-position: 50% 0%; } to { background-position: 50% 100%; } }
+
+@media (max-width: 768px) {
+  .annunciator__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: min(360px, 100%); }
+  .stage-plate { gap: 0.5rem; font-size: 0.56rem; letter-spacing: 0.16em; }
+  .stage-plate__gauge { width: 52px; }
+  .stage-plate__status { min-width: 0; }
+  .logbook-rail { gap: 0.7rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.magic-bento-card, .project-card, .resume-entry)[data-power],
+  .magic-bento-card[data-power]::before,
+  .annunciator__tile,
+  .psc-led,
+  .stage-plate__icon svg,
+  .animated-gradient-text { animation: none !important; transition: none !important; }
+}
+
 /* ───────── FOOTER ───────── */
 footer {
   text-align: center;
