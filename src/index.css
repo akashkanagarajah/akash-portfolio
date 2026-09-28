@@ -242,116 +242,19 @@ section { padding: 7rem 8% 5rem; position: relative; }
   font-weight: 400;
 }
 
-/* Hero power readout — instrument strip under the interests */
-.hero-readout {
-  display: flex;
-  align-items: center;
-  gap: 0.95rem;
-  margin-top: 2.4rem;
-  max-width: 330px;
-}
-.hero-readout__dial {
-  width: 38px;
-  height: 24px;
-  flex-shrink: 0;
-  overflow: visible;
-}
-.hero-readout__arc,
-.hero-readout__tick {
-  fill: none;
-  stroke: var(--text-muted);
-  stroke-width: 1;
-  opacity: 0.55;
-}
-.hero-readout__needle {
-  stroke: var(--accent);
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  transform-origin: 18px 19px;
-  transform: rotate(calc(var(--level) * 180deg));
-  transition: transform 0.35s ease-out;
-}
-.hero-readout__hub { fill: var(--accent); }
-.hero-readout__body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.hero-readout__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.hero-readout__label,
-.hero-readout__status {
-  font-size: 0.6rem;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.hero-readout__value {
-  font-size: 0.78rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-.hero-readout__value small {
-  font-size: 0.6rem;
-  margin-left: 0.15em;
-  color: var(--text-muted);
-}
-.hero-readout__bar {
-  display: grid;
-  grid-template-columns: repeat(24, 1fr);
-  gap: 3px;
-  height: 7px;
-}
-.hero-readout__seg {
-  border-radius: 1px;
-  background: var(--readout-off);
-  transition: background 0.25s, box-shadow 0.25s;
-}
-.hero-readout__seg.is-on {
-  background: var(--accent);
-  box-shadow: 0 0 5px var(--accent-border-hover);
-}
-.hero-readout__status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.hero-readout__led {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.45;
-}
-.hero-readout[data-status="self-test"] .hero-readout__led { opacity: 1; animation: readout-blink 0.2s steps(1) infinite; }
-.hero-readout[data-status="ramping"] .hero-readout__led { opacity: 1; animation: readout-breathe 1.6s ease-in-out infinite; }
-.hero-readout[data-status="online"] .hero-readout__led {
-  opacity: 1;
-  background: var(--accent-2);
-  box-shadow: 0 0 6px var(--accent-2);
-}
-@keyframes readout-blink { 50% { opacity: 0.15; } }
+/* Slow lamp breathe — the project status LED for work still in progress. */
 @keyframes readout-breathe { 50% { opacity: 0.4; } }
 
 /* ───────── HERO — power-up on load ─────────
    The hero is the system coming out of standby: text wakes from dim, the gold
-   elements flicker up like indicator lamps, the photo bezel energises and the
-   readout runs its lamp test. Every animation fills `backwards` only and ends
+   elements flicker up like indicator lamps and the photo bezel energises.
+   Every animation fills `backwards` only and ends
    on the element's own style, so once it finishes (~1.3s) nothing lingers and
    hover styles work untouched. */
 .hero-label,
 .hero-greet,
 .hero-interests li,
 .hero-hint { animation: hero-wake 0.6s ease-out 0.1s backwards; }
-.hero-readout { animation: hero-wake 0.5s ease-out 0.2s backwards; }
 .hero-name { animation: hero-lamp 1s linear 0.15s backwards; }
 .hero-interests li::before { animation: hero-tick 0.35s ease-out backwards; }
 .hero-interests li:nth-child(1)::before { animation-delay: 0.45s; }
@@ -359,8 +262,6 @@ section { padding: 7rem 8% 5rem; position: relative; }
 .hero-interests li:nth-child(3)::before { animation-delay: 0.65s; }
 .hero-photo-frame { animation: hero-bezel 1.05s linear 0.25s backwards; }
 .hero-pixel { animation: hero-screen 0.9s ease-out 0.35s backwards; }
-.hero-readout__seg { animation: readout-lamp 0.42s ease-out calc(0.3s + var(--i) * 22ms); }
-.hero-readout__needle { animation: readout-needle-test 0.9s ease-in-out 0.3s; }
 
 @keyframes hero-wake { from { opacity: 0.3; } }
 @keyframes hero-lamp {
@@ -392,10 +293,6 @@ section { padding: 7rem 8% 5rem; position: relative; }
   }
 }
 @keyframes hero-screen { from { filter: brightness(0.35) saturate(0.5); } }
-@keyframes readout-lamp {
-  35% { background: var(--accent); box-shadow: 0 0 6px var(--accent-border-hover); }
-}
-@keyframes readout-needle-test { 45% { transform: rotate(180deg); } }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-label,
@@ -405,9 +302,7 @@ section { padding: 7rem 8% 5rem; position: relative; }
   .hero-interests li::before,
   .hero-hint,
   .hero-photo-frame,
-  .hero-pixel,
-  .hero-readout,
-  .hero-readout * { animation: none !important; transition: none !important; }
+  .hero-pixel { animation: none !important; transition: none !important; }
 }
 
 /* ───────── placeholder images ───────── */
@@ -828,9 +723,13 @@ section { padding: 7rem 8% 5rem; position: relative; }
   font-family: 'Cormorant Garamond', serif;
   font-size: 1.6rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: var(--text);
   letter-spacing: 0.01em;
   display: inline-block;
+  /* The sticky label sits over the circuit field's side band. Full --text
+     colour (not muted) and an unblurred reveal keep it readable over lit
+     traces; the page-colour halo only softens traces right at the glyphs. */
+  text-shadow: 0 0 6px var(--bg), 0 0 14px var(--bg), 0 0 26px var(--bg);
 }
 .resume-entries {
   display: flex;
@@ -1545,67 +1444,22 @@ button.connect-link:disabled {
 .stage-plate {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  margin: -0.2rem 0 0.95rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px dashed var(--border);
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
   font-size: 0.6rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 .stage-plate__icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   color: var(--text-muted);
   transition: color 0.5s ease;
 }
 .stage-plate__icon svg { width: 100%; height: 100%; display: block; }
 [data-power="on"] .stage-plate__icon { color: var(--accent); }
-.stage-plate__label {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.stage-plate__gauge {
-  position: relative;
-  width: 76px;
-  height: 5px;
-  flex-shrink: 0;
-}
-.stage-plate__meter {
-  position: absolute;
-  inset: 0;
-  background: var(--readout-off);
-  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
-          mask-image: repeating-linear-gradient(90deg, #000 0 5px, transparent 5px 7px);
-}
-.stage-plate__fill {
-  position: absolute;
-  inset: 0;
-  background: var(--accent);
-  transform-origin: left center;
-  transform: scaleX(0);
-}
-.stage-plate__rated {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  left: calc(var(--stage-level) * 100% - 1px);
-  width: 1px;
-  background: var(--text-muted);
-  opacity: 0.7;
-}
-.stage-plate__status {
-  min-width: 6.2em;
-  text-align: right;
-  transition: color 0.4s ease;
-}
-[data-power="on"] .stage-plate__status { color: var(--accent); }
-[data-peak="true"] .stage-plate__status { color: var(--accent-2); }
 [data-peak="true"] .stage-plate__icon svg {
   animation: stage-core-spin 14s linear infinite;
   filter: drop-shadow(0 0 4px var(--accent-border-hover));
@@ -1724,9 +1578,7 @@ button.connect-link:disabled {
 
 @media (max-width: 768px) {
   .annunciator__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: min(360px, 100%); }
-  .stage-plate { gap: 0.5rem; font-size: 0.56rem; letter-spacing: 0.16em; }
-  .stage-plate__gauge { width: 52px; }
-  .stage-plate__status { min-width: 0; }
+  .stage-plate { font-size: 0.56rem; letter-spacing: 0.16em; }
   .logbook-rail { gap: 0.7rem; }
 }
 

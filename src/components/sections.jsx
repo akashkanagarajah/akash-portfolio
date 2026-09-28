@@ -1,5 +1,4 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { motion, useMotionValueEvent, useTransform } from 'motion/react'
 import {
   BorderGlow,
   ScrollReveal,
@@ -88,67 +87,6 @@ export function Dock({ theme, setTheme }) {
 
 /* ---------- Section 1: Hero ---------- */
 
-/* Instrument strip under the interests: a small gauge + segmented bar reading
-   live page power (scroll progress). On load it runs a lamp test — every
-   segment lit and the needle swung to full scale — then settles to the real
-   level, as panel indicators do at start-up. Decorative, so hidden from AT. */
-const READOUT_SEGMENTS = 24
-const READOUT_BOOT_MS = 1300
-const READOUT_TICKS = [0, 45, 90, 135, 180].map((deg) => {
-  const a = Math.PI + (deg / 180) * Math.PI
-  return { x1: 18 + 11 * Math.cos(a), y1: 19 + 11 * Math.sin(a), x2: 18 + 14 * Math.cos(a), y2: 19 + 14 * Math.sin(a) }
-})
-
-function PowerReadout() {
-  const { progress, reducedMotion } = usePowerProgress()
-  const [level, setLevel] = useState(() => Math.round(progress.get() * 100))
-  const [booted, setBooted] = useState(false)
-
-  useMotionValueEvent(progress, 'change', (v) => setLevel(Math.round(v * 100)))
-  useEffect(() => {
-    if (reducedMotion) {
-      setBooted(true)
-      return
-    }
-    const id = setTimeout(() => setBooted(true), READOUT_BOOT_MS)
-    return () => clearTimeout(id)
-  }, [reducedMotion])
-
-  const lit = Math.round((level / 100) * READOUT_SEGMENTS)
-  const status = !booted ? 'Self-test' : level < 1 ? 'Standby' : level < 99 ? 'Ramping' : 'Online'
-
-  return (
-    <div className="hero-readout" data-status={status.toLowerCase()} style={{ '--level': level / 100 }} aria-hidden="true">
-      <svg className="hero-readout__dial" viewBox="0 0 36 22">
-        <path className="hero-readout__arc" d="M4 19 A14 14 0 0 1 32 19" />
-        {READOUT_TICKS.map((t, i) => (
-          <line key={i} className="hero-readout__tick" x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2} />
-        ))}
-        <line className="hero-readout__needle" x1="18" y1="19" x2="7" y2="19" />
-        <circle className="hero-readout__hub" cx="18" cy="19" r="1.7" />
-      </svg>
-      <div className="hero-readout__body">
-        <div className="hero-readout__head">
-          <span className="hero-readout__label">Core power</span>
-          <span className="hero-readout__value">
-            {String(level).padStart(3, '0')}
-            <small>%</small>
-          </span>
-        </div>
-        <div className="hero-readout__bar">
-          {Array.from({ length: READOUT_SEGMENTS }, (_, i) => (
-            <span key={i} className={`hero-readout__seg${i < lit ? ' is-on' : ''}`} style={{ '--i': i }} />
-          ))}
-        </div>
-        <div className="hero-readout__status">
-          <span className="hero-readout__led" />
-          {status}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function Hero() {
   return (
     <section className="hero" id="home">
@@ -172,7 +110,6 @@ export function Hero() {
           <li>Gym &amp; Sport</li>
           <li>Building Things</li>
         </ul>
-        <PowerReadout />
       </div>
 
       <div className="hero-right">
@@ -702,12 +639,13 @@ export function ReadingSection() {
   )
 }
 
-/* ---------- Stage plates (career / education) ----------
-   Each entry has a rated power level. As it scrolls in, its meter charges up to
-   that level and the card's glow scales with it. Career derives the levels from
-   scroll position (see useRampLevels), so they rise down the chronological list
-   and peak at the final role, OPG. Education keeps fixed low levels — a quieter
-   beat after that peak. Layered over the entry; content is untouched. */
+/* ---------- Career / education power ----------
+   Each entry has a power level that sets how strongly its card glows once it
+   scrolls in. Career derives the levels from scroll position (see
+   useRampLevels), so the glow rises down the chronological list and peaks on
+   the final role, OPG. Education keeps fixed low levels — a quieter beat after
+   that peak. Career entries also carry a small domain cue (icon + field) above
+   the title. Layered over the entry; content is untouched. */
 const STAGE_ICONS = {
   // Nuclear / SCADA: an abstract core — nucleus with three orbits.
   core: (
@@ -737,42 +675,27 @@ const STAGE_ICONS = {
       <rect x="13" y="8.5" width="4.5" height="4.5" rx="0.6" />
     </svg>
   ),
-  // Education: stacked foundation courses.
-  foundation: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 18h18M5 14h14M7 10h10M9 6h6" />
-    </svg>
-  ),
 }
 
-function StagePlate({ stage, charge, on, peak }) {
-  const status = !on ? 'Standby' : peak ? stage.peakStatus ?? 'Online' : 'Ramping'
+function StagePlate({ stage }) {
   return (
     <div className="stage-plate" aria-hidden="true">
       <span className="stage-plate__icon">{STAGE_ICONS[stage.cue]}</span>
       <span className="stage-plate__label">{stage.label}</span>
-      <span className="stage-plate__gauge">
-        <span className="stage-plate__meter">
-          <motion.span className="stage-plate__fill" style={{ scaleX: charge }} />
-        </span>
-        <span className="stage-plate__rated" />
-      </span>
-      <span className="stage-plate__status">{status}</span>
     </div>
   )
 }
 
-// An entry is fully charged once its centre reaches this fraction of the viewport.
+// An entry reaches full power once its centre reaches this fraction of the viewport.
 const STAGE_FULL_LINE = 0.55
 
 /* Power wiring shared by career and education entries. */
-function useStagePower(level = 1) {
+function useStagePower() {
   const ref = useRef(null)
   const power = useElementPower(ref, { offset: ['start end', `center ${STAGE_FULL_LINE * 100}%`] })
-  const charge = useTransform(power, [0, 1], [0, level])
   const on = usePowerSwitch(power, 0.2)
   const peak = usePowerSwitch(power, 0.98)
-  return { ref, charge, on, peak }
+  return { ref, on, peak }
 }
 
 const stageAttrs = ({ on, peak }, level) => ({
@@ -782,7 +705,7 @@ const stageAttrs = ({ on, peak }, level) => ({
 })
 
 /* Career's power ramp: each entry is rated by the Career section's own power
-   (enter → exit) at the scroll position where that entry finishes charging,
+   (enter → exit) at the scroll position where that entry reaches full power,
    normalised so the last entry reads 1. Later entries sit further down the
    ramp, so ratings rise through the list and the final role is the peak.
    Re-derived whenever the landmarks re-measure (resize, layout shifts). */
@@ -797,8 +720,8 @@ function useRampLevels(listRef, sectionId) {
     const maxScroll = Math.max(1, document.documentElement.scrollHeight - vh)
     const ramp = [...list.children].map((el) => {
       const r = el.getBoundingClientRect()
-      const chargedAt = (r.top + window.scrollY + r.height / 2 - vh * STAGE_FULL_LINE) / maxScroll
-      return mapSectionProgress(landmark, chargedAt, 'enter', 'exit')
+      const fullAt = (r.top + window.scrollY + r.height / 2 - vh * STAGE_FULL_LINE) / maxScroll
+      return mapSectionProgress(landmark, fullAt, 'enter', 'exit')
     })
     const peak = ramp[ramp.length - 1] || 1
     const next = ramp.map((v) => Math.round(Math.min(1, Math.max(0.05, v / peak)) * 100) / 100)
@@ -809,7 +732,7 @@ function useRampLevels(listRef, sectionId) {
 
 /* ---------- Resume entry (career / education) ---------- */
 function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, level = 0.5, children }) {
-  const power = useStagePower(level)
+  const power = useStagePower()
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -823,7 +746,7 @@ function ResumeEntry({ title, company, dates, tags = [], bullets = [], stage, le
       elementRef={power.ref}
       {...stageAttrs(power, level)}
     >
-      {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
+      {stage && <StagePlate stage={stage} />}
       <div className="resume-row">
         <h3 className="resume-title">{title}</h3>
         <span className="resume-date">{dates}</span>
@@ -860,7 +783,7 @@ export function CareerSection() {
     <section className="resume-section" id="resume">
       <div className="resume-grid">
         <div className="resume-side">
-          <ScrollReveal as="span" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="resume-side-label">
+          <ScrollReveal as="span" baseOpacity={0} enableBlur={false} baseRotation={3} className="resume-side-label">
             Experience
           </ScrollReveal>
         </div>
@@ -911,7 +834,7 @@ export function CareerSection() {
               title="Control Computers Intern — Professional Engineering Year"
               company="Ontario Power Generation · Pickering NGS"
               dates="May 2022 – Apr 2023"
-              stage={{ cue: 'core', label: 'Nuclear I&C', peakStatus: 'At power' }}
+              stage={{ cue: 'core', label: 'Nuclear I&C' }}
               level={levels[3]}
               tags={['Python', 'SCADA', 'DCC/PACE', 'Serial Comms']}
               bullets={[
@@ -929,11 +852,10 @@ export function CareerSection() {
 }
 
 /* ---------- Section 4: Education ---------- */
-function EduEntry({ title, sub, dates, courses = [], stage }) {
+function EduEntry({ title, sub, dates, courses = [], level = 0.2 }) {
   const [open, setOpen] = useState(false)
   const contentRef = useRef(null)
-  const level = stage?.level ?? 0.2
-  const power = useStagePower(level)
+  const power = useStagePower()
   return (
     <BorderGlow
       glowColor="43 30 10"
@@ -947,7 +869,6 @@ function EduEntry({ title, sub, dates, courses = [], stage }) {
       elementRef={power.ref}
       {...stageAttrs(power, level)}
     >
-      {stage && <StagePlate stage={stage} charge={power.charge} on={power.on} peak={power.peak} />}
       <div className="resume-row">
         <h3 className="resume-title">{title}</h3>
         <span className="resume-date">{dates}</span>
@@ -989,7 +910,7 @@ export function EducationSection() {
     <section className="resume-section" id="education">
       <div className="resume-grid">
         <div className="resume-side">
-          <ScrollReveal as="span" baseOpacity={0} enableBlur={true} baseRotation={3} blurStrength={8} className="resume-side-label">
+          <ScrollReveal as="span" baseOpacity={0} enableBlur={false} baseRotation={3} className="resume-side-label">
             Education
           </ScrollReveal>
         </div>
@@ -1006,7 +927,7 @@ export function EducationSection() {
               title="Toronto Metropolitan University"
               sub="Bachelor of Engineering — Computer Engineering (B.Eng.)"
               dates="2019 – 2024"
-              stage={{ cue: 'foundation', label: 'Foundations', level: 0.25 }}
+              level={0.25}
               courses={[
                 'Computer Architecture',
                 'Embedded Systems',
@@ -1024,7 +945,7 @@ export function EducationSection() {
               title="Advanced Placement High School"
               sub="AP Honours Graduate"
               dates="2016 – 2019"
-              stage={{ cue: 'foundation', label: 'Pre-university', level: 0.15 }}
+              level={0.15}
               courses={['AP Calculus', 'AP Physics', 'AP Chemistry', 'AP Computer Science', 'AP English']}
             />
           </div>
