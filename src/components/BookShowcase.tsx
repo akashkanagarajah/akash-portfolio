@@ -335,6 +335,15 @@ function createShowcase(o: EngineOptions): Engine {
     return x;
   };
 
+  /* Idle-time scheduling for the GPU warm-up (section 10b). Safari has no
+     requestIdleCallback, so it falls back to a short timeout. */
+  let alive = true;
+  const whenIdle = (fn: () => void) => {
+    const run = () => alive && fn();
+    if (typeof window.requestIdleCallback === "function") window.requestIdleCallback(run, { timeout: 4000 });
+    else setTimeout(run, 300);
+  };
+
   /* ---------- 0b. Device budget ----------
      The reference is a desktop demo and sizes everything for a desktop GPU. On a
      phone the same scene asks for well over 100MB of GPU memory (four books ×
@@ -706,6 +715,10 @@ function createShowcase(o: EngineOptions): Engine {
         mFront.map = t;
         mFront.needsUpdate = true;
         track(t);
+        /* A cover that arrives after the warm-up (10b) is uploaded in idle
+           time too, so it doesn't stall the first on-screen frame. Before the
+           warm-up there's nothing to do: its render uploads every texture. */
+        if (warmed && !running) whenIdle(() => !running && renderer.initTexture(t));
         /* The painted placeholder is now unreachable. It used to stay resident
            for the life of the page — four books' worth of dead 1024×1536
            texture on top of the covers that replaced them. */
@@ -1847,6 +1860,52 @@ function createShowcase(o: EngineOptions): Engine {
   /* Decide once up front rather than waiting for a callback that may not come. */
   syncRunning();
 
+  /* ---------- 10b. Warm up ahead of arrival ----------
+     The first frame the loop draws compiles every shader (shadow pass
+     included) and decodes and uploads every texture: a one-off main-thread
+     stall of a couple of hundred ms on a phone, and far longer on a cold first
+     visit. Left to the first on-screen frame, it landed mid-scroll, right as
+     the commit-telemetry scan just above the shelf starts, and made that
+     animation stutter.
+
+     So that frame is drawn early, once, while the stage is still off screen:
+     once the visitor is heading this way (within WARM_AHEAD viewports), in a
+     scroll pause. Visitors who never come near the shelf never pay for it, GPU
+     memory included. If the loop starts first, its own first frame does the
+     work, as before. Nothing about the scene changes; this only front-loads
+     that frame. */
+  const WARM_AHEAD = 3; // start looking this many viewports ahead of the stage…
+  const WARM_FORCE = 2.2; // …and past this point stop waiting for a scroll pause
+  let warmed = false;
+  let lastScroll = 0;
+  let warmTimer: ReturnType<typeof setTimeout> | undefined;
+  let warmRaf = 0;
+  const tryWarm = () => {
+    warmRaf = 0;
+    if (warmed || running) return; // the loop's first frame has it covered
+    const r = stage.getBoundingClientRect();
+    const vh = window.innerHeight || 1;
+    const top = r.top / vh;
+    if (top > 1 + WARM_AHEAD || r.bottom < -vh * WARM_AHEAD) return;
+    /* A pause is the ideal moment. A visitor scrolling straight here never
+       pauses, so close in it goes ahead anyway: page scroll runs on the
+       compositor, so this still lands before the telemetry scan starts rather
+       than during it. */
+    if (performance.now() - lastScroll < 250 && top > WARM_FORCE) return;
+    warmed = true;
+    renderer.render(scene, camera); // off screen: compiles everything, uploads every texture
+  };
+  const pollWarm = () => {
+    tryWarm();
+    if (!warmed && !running && alive) warmTimer = setTimeout(() => whenIdle(pollWarm), 500);
+  };
+  const onScrollMark = () => {
+    lastScroll = performance.now();
+    if (!warmed && !warmRaf) warmRaf = requestAnimationFrame(tryWarm);
+  };
+  window.addEventListener("scroll", onScrollMark, { passive: true });
+  warmTimer = setTimeout(() => whenIdle(pollWarm), 1500);
+
   /* ---------- 11. Context loss ----------
      Phones drop the WebGL context under memory pressure or when the tab is
      backgrounded. Without preventDefault the browser will not even try to
@@ -1856,6 +1915,7 @@ function createShowcase(o: EngineOptions): Engine {
      reviving the lost one. */
   const onLost = (e: Event) => {
     e.preventDefault();
+    alive = false; // this engine is discarded; pending idle work must not touch the lost context
     stop();
     o.onContextLost();
   };
@@ -1864,8 +1924,12 @@ function createShowcase(o: EngineOptions): Engine {
   return {
     close,
     dispose() {
+      alive = false;
       stop();
       timers.forEach(clearTimeout);
+      clearTimeout(warmTimer);
+      cancelAnimationFrame(warmRaf);
+      window.removeEventListener("scroll", onScrollMark);
       timer.disconnect();
       ro.disconnect();
       io?.disconnect();
