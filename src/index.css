@@ -50,7 +50,14 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+/* Horizontal overflow is clipped, not hidden. Card glows (.edge-light) reach
+   past the screen edge on phones, and `hidden` on body still let mobile
+   browsers widen the page to fit them (a 375px screen laid out at 391px, so
+   it could drift sideways). `clip` on both elements stops the body's value
+   propagating to the viewport, so the body itself clips at the screen width,
+   and unlike `hidden` it creates no scroll container, so sticky and fixed
+   elements are unaffected. Browsers without `clip` keep the old `hidden`. */
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; overflow-x: clip; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -59,6 +66,7 @@ body {
   line-height: 1.6;
   transition: background 0.45s ease, color 0.45s ease;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 a { color: inherit; text-decoration: none; }
 
